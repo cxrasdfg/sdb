@@ -1,5 +1,6 @@
 #include <iostream>
 #include <unordered_set>
+#include "lexer.hpp"
 
 int main(int argc, char *argv[])
 {

@@ -9,6 +9,8 @@
 #include <boost/lexical_cast.hpp>
 #include <functional>
 
+typedef std::function<std::pair<std::string, int>(char)> fa_function_type;
+
 class Lexer{
 public:
     Lexer(){}
@@ -18,6 +20,7 @@ public:
     const Lexer &operator=(Lexer &&lexer);
 
     auto tokenize(const std::string &str);
+    std::pair<std::string, char> tokenize_char(char ch);
 
 private:
     std::vector<std::pair<std::string, std::string>> tokens;
@@ -29,6 +32,7 @@ private:
         "abs", "and", "array", "as", "all",
         "select", "from", "where", "with", "insert"
     };
+    const std::vector<fa_function_type> fa_function;
 };
 
 // --------- Function --------
@@ -46,14 +50,16 @@ const Lexer &Lexer::operator=(Lexer &&lexer){
 }
 
 auto Lexer::tokenize(const std::string &str){
-    auto iter = str.cbegin();
     auto token = std::pair<std::string, std::string>();
-    while (iter != str.cend()){
-        if (this->char_set.find(*iter) == this->char_set.cend()){
-            token.first = boost::lexical_cast<std::string>(*iter);
-            token.second = boost::lexical_cast<std::string>(*iter);
+    auto vfa = this->fa_function;
+    for (auto ch : str) {
+        std::vector<fa_function_type> tem_vfa;
+        for(auto &f: vfa){
+            auto ret = f(ch);
+            if (ret.second){
+                tem_vfa.push_back(f);
+            }
         }
-        this->tokens.push_back(token);
     }
     return this->tokens;
 }

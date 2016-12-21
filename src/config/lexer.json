@@ -1,0 +1,5 @@
+{
+    "reserved": [
+        "select", "from", "where"
+    ]
+}

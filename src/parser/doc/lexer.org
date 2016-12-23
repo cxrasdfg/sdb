@@ -1,7 +1,79 @@
 * lexer
 ** Token类型
-*** 普通字符: , * = < > ;等等
+*** 标点符号: , * = < > ;等等
+    状态机:
+    #+BEGIN_SRC dot :file ./punctuation_fa.png :exports results
+    digraph finite_state_machine {
+    rankdir=LR;
+    node [shape = circle];
+    begin [shape = none]
+    punct [shape = doublecircle]
+
+    begin -> punct [ label = "[punctuation]: , * = < >..." ]
+    }
+    #+END_SRC
+
+#+RESULTS:
+[[file:./punctuation_fa.png]]
+
 *** 注释标识: -- , /**/
+**** "--" 注释和减号 '-'的状态机
+     #+BEGIN_SRC  dot :file ./comment_fa.png :exports results
+     digraph C_NFA_1 {
+     rankdir = LR;
+     node [shape = circle];
+     begin [shape = none];
+     end [shape = doublecircle];
+     Minus [shape = doublecircle];
+     M2 [shape = doublecircle];
+
+     begin -> Minus [label = "'-'"];
+     Minus -> M2 [label = "'-'"];
+     M2 -> end [label = "'\\n'"];
+     M2 -> M2 [label = "other input except '\\n'"];
+     }
+     #+END_SRC
+
+     #+RESULTS:
+     [[file:./comment_fa.png]]
+
+**** /* */注释和除号/的状态机
+     #+BEGIN_SRC  dot :file ./comment_fa2.png :exports results
+     digraph C_NFA_1 {
+     rankdir = LR;
+     node [shape = circle];
+
+     begin [shape = none];
+
+     Div [shape = doublecircle];
+     C3 [shape = doublecircle];
+
+     begin -> Div [label = "'/'"];
+     Div -> C1 [label = "'*'"];
+     C1 -> C2 [label = "all input except '*'"];
+     C2 -> C3 [label = "'/'"];
+     C2 -> C1 [label = "all input except '/'"];
+     }
+     #+END_SRC
+
+     #+RESULTS:
+     [[file:./comment_fa2.png]]
+
 *** 普通标识符: 变量等
+    #+BEGIN_SRC  dot :file ./identifier.png :exports results
+    digraph C_NFA_1 {
+    rankdir = LR;
+    node [shape = circle];
+    begin [shape = none];
+    end [shape = none];
+    Minus [shape = doublecircle];
+    M2 [shape = doublecircle];
+
+    begin -> Minus [label = "'-'"];
+    Minus -> M2 [label = "'-'"];
+    M2 -> end [label = "'\\n'"];
+    M2 -> M2 [label = "other input except '\\n'"];
+    }
+    #+END_SRC
 *** number: 123 1234.4444 
 *** 字符串标识: "", ''

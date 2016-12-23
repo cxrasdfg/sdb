@@ -7,6 +7,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/filesystem.hpp>
+#include <unordered_set>
 
 class Config{
 public:
@@ -16,9 +17,9 @@ public:
 
 class LexerConfig: public Config{
 public:
-    std::vector<std::string> get_category_list(const std::string &category_name);
-    std::vector<std::string> get_reserved_list(){return this->get_category_list("reserved"); }
-    std::vector<std::string> get_special_char_list(){return this->get_category_list("special_char"); }
+    std::unordered_set<std::string> get_category_set(const std::string &category_name);
+    std::unordered_set<std::string> get_reserved_set(){return this->get_category_set("reserved"); }
+    std::unordered_set<char> get_punctuation_set();
 
 private:
     std::string filename = "lexer.json";

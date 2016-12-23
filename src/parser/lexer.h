@@ -9,59 +9,40 @@
 #include <boost/lexical_cast.hpp>
 #include <functional>
 
-typedef std::function<std::pair<std::string, int>(char)> fa_function_type;
 
 class Lexer{
 public:
-    Lexer(){}
+    Lexer();
     Lexer(const Lexer &lexer){*this=lexer;}
     Lexer(Lexer &&lexer){*this=lexer;}
     const Lexer &operator=(const Lexer &lexer);
     const Lexer &operator=(Lexer &&lexer);
 
-    auto tokenize(const std::string &str);
-    std::pair<std::string, char> tokenize_char(char ch);
+    std::vector<std::pair<std::string, std::string>> tokenize(const std::string &str);
+
+    // 初始状态触发函数
+    bool is_specail_char_trigger(char ch){
+        return this->punctuation_set.find(ch) != this->punctuation_set.cend();
+    }
+    
+    // 状态处理函数
+    std::pair<std::string, std::string> identifier_process();
+    std::pair<std::string, std::string> punctuation_procerss();
+
+    std::pair<std::string, std::string> number_process();
+    std::string number_float_process();
+    std::pair<std::string, std::string> string_process();
 
 private:
+    // token集，lexer返回的值
     std::vector<std::pair<std::string, std::string>> tokens;
-    const std::unordered_set<char> char_set = {
-        '*', ',', ';', '(', ')', '[', ']', '<', '>',
-        '=', '&'
-    };
-    const std::unordered_set<std::string> reserved_word = {
-        "abs", "and", "array", "as", "all",
-        "select", "from", "where", "with", "insert"
-    };
-    const std::vector<fa_function_type> fa_function;
+
+    // 特殊集合
+    std::unordered_set<char> punctuation_set;
+    std::unordered_set<std::string> reserved_word;
+
+    std::string::const_iterator iter;
+    std::string::const_iterator iter_end;
 };
-
-// --------- Function --------
-
-const Lexer &Lexer::operator=(const Lexer &lexer){
-    if (this == &lexer){
-        return *this;
-    }
-    this->tokens = lexer.tokens;
-    return *this;
-}
-
-const Lexer &Lexer::operator=(Lexer &&lexer){
-    return lexer;
-}
-
-auto Lexer::tokenize(const std::string &str){
-    auto token = std::pair<std::string, std::string>();
-    auto vfa = this->fa_function;
-    for (auto ch : str) {
-        std::vector<fa_function_type> tem_vfa;
-        for(auto &f: vfa){
-            auto ret = f(ch);
-            if (ret.second){
-                tem_vfa.push_back(f);
-            }
-        }
-    }
-    return this->tokens;
-}
 
 #endif

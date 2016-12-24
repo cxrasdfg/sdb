@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "../config/config.h"
 
@@ -36,12 +37,16 @@ const Lexer &Lexer::operator=(Lexer &&lexer){
 
 std::vector<std::pair<std::string, std::string>> Lexer::tokenize(const std::string &str){
     std::cout << "tokenize begin" << std::endl;
-    std::pair<std::string, std::string> token;
 
     this->iter = str.cbegin();
     this->iter_end = str.cend();
+    int r_count = 0;
     while (iter != iter_end) {
-        std::pair<std::string, std::string> ret;
+        r_count++;
+        if (r_count > 100) {
+            break;
+        }
+        std::pair<std::string, std::string> token;
         auto ch = *iter;
         if (ch == '_' || std::isalpha(ch))
             token = this->identifier_process();
@@ -51,8 +56,12 @@ std::vector<std::pair<std::string, std::string>> Lexer::tokenize(const std::stri
             token = this->number_process();
         else if (ch == '\"' || ch == '\'')
             token = this->string_process();
-        else
+        else if (std::isspace(ch)){
             iter++;
+            continue;
+        } else {
+            iter++;
+        }
         tokens.push_back(token);
     }
     return tokens;
@@ -63,7 +72,7 @@ std::pair<std::string, std::string> Lexer::identifier_process(){
     std::cout << "identifier_process begin" << std::endl;
     std::pair<std::string, std::string> ret;
     std::string word;
-    while (iter != iter_end && ((*iter == '_') || (*iter>'a' &&*iter<'z') || (*iter>'A' && *iter<'Z'))){
+    while (iter != iter_end && std::isalpha(*iter)){
         word += *iter;
         iter++;
     }
@@ -71,7 +80,9 @@ std::pair<std::string, std::string> Lexer::identifier_process(){
     //for (auto x : reserved_word) {
         //std::cout << x << std::endl;
     //}
-    ret.second = reserved_word.find(word) == reserved_word.end() ? "identifier" : "reserved_word";
+    std::string word_up = word;
+    boost::algorithm::to_upper(word_up);
+    ret.second = reserved_word.find(word_up) == reserved_word.end() ? "identifier" : "reserved_word";
     return ret;
 }
 
@@ -122,13 +133,10 @@ std::pair<std::string, std::string> Lexer::string_process(){
     std::string word;
     char rpair = *iter;
     iter++;
-    while (iter != iter_end){
-        char ch = *iter;
-        if (ch == rpair) {
-            word += rpair;
-            break;
-        }
-        word += ch;
+    while (iter != iter_end && *iter != rpair){
+        word += *iter;
+        iter++;
     }
+    iter++;
     return std::make_pair(word, "string");
 }

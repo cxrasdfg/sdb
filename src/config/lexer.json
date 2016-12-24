@@ -15,5 +15,5 @@
 		"UNIQUE", "UPDATE", "USE", "VALUES", "VIEW", "VIEWS", "WHEN",
 		"WHERE", "WITH"
     ],
-    "punctuation": ",$()[]:;*.+-/<>%="
+    "punctuation": ",$:;*.+<>%="
 }

@@ -33,6 +33,10 @@ public:
     std::string number_float_process();
     std::pair<std::string, std::string> string_process();
 
+    // 注释部分
+    std::pair<std::string, std::string> div_and_comment_process();
+    std::pair<std::string, std::string> minus_and_comment_process();
+
 private:
     // token集，lexer返回的值
     std::vector<std::pair<std::string, std::string>> tokens;

@@ -48,19 +48,31 @@ std::vector<std::pair<std::string, std::string>> Lexer::tokenize(const std::stri
         }
         std::pair<std::string, std::string> token;
         auto ch = *iter;
+        std::cout << "ch:" << ch << std::endl;
         if (ch == '_' || std::isalpha(ch))
-            token = this->identifier_process();
+            token = identifier_process();
         else if (this->is_specail_char_trigger(ch))
-            token = this->punctuation_procerss();
+            token = punctuation_procerss();
         else if (ch > '0' && ch <'9')
-            token = this->number_process();
+            token = number_process();
         else if (ch == '\"' || ch == '\'')
-            token = this->string_process();
+            token = string_process();
+        else if (ch == '-'){
+            token = minus_and_comment_process();
+            if (token.first.empty())
+                continue;
+        }
+        else if (ch == '/'){
+            token = div_and_comment_process();
+            if (token.first.empty())
+                continue;
+        }
         else if (std::isspace(ch)){
             iter++;
             continue;
         } else {
-            iter++;
+            std::cout << "one char not recognite:" << ch << std::endl;
+            return tokens;
         }
         tokens.push_back(token);
     }
@@ -139,4 +151,34 @@ std::pair<std::string, std::string> Lexer::string_process(){
     }
     iter++;
     return std::make_pair(word, "string");
+}
+
+std::pair<std::string, std::string> Lexer::div_and_comment_process(){
+    std::cout << "div_and_comment_process begin" << std::endl;
+    std::pair<std::string, std::string> token;
+    iter++;
+    if (iter!=iter_end && *iter != '*')
+        return std::make_pair("/", "/");
+    iter++;
+    while (iter != iter_end) {
+        if (*iter == '*'){ 
+            if ((iter+1) != iter_end && *(iter+1) == '/')
+                iter += 2;
+                return token;
+        }
+        iter++;
+    }
+    return token;
+}
+
+std::pair<std::string, std::string> Lexer::minus_and_comment_process(){
+    std::cout << "minus_and_comment_process begin" << std::endl;
+    iter++;
+    if (iter!=iter_end && *iter != '-')
+        return std::make_pair("-", "-");
+    else 
+        while (iter!=iter_end && *iter!='\n')
+            iter++;
+    iter++;
+    return std::make_pair("", "");
 }

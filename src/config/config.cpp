@@ -28,11 +28,9 @@ boost::property_tree::ptree  Config::get_ptree_node(const std::string &filename)
 }
 
 // ======== LexerConfig Function =========
-
-std::unordered_set<std::string> LexerConfig::get_category_set(const std::string &category_name){
+std::unordered_set<std::string> LexerConfig::get_reserved_set(){
     std::unordered_set<std::string> category_set;
-    auto pt = this->get_ptree_node(this->filename);
-    auto array_pt = pt.get_child(category_name);
+    auto array_pt = pt.get_child("reserved");
     for (auto x : array_pt) {
         category_set.insert(x.second.data());
     }
@@ -40,7 +38,6 @@ std::unordered_set<std::string> LexerConfig::get_category_set(const std::string 
 }
 
 std::unordered_set<char> LexerConfig::get_punctuation_set(){
-    auto pt = this->get_ptree_node(this->filename); 
     auto str_pt = pt.get_child("punctuation");
     std::unordered_set<char> ret;
     for (auto ch: str_pt.data()){

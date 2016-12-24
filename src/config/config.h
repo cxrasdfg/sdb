@@ -11,18 +11,20 @@
 
 class Config{
 public:
+    Config(){}
+    Config(const std::string &fn):pt(get_ptree_node(fn)){}
     boost::filesystem::path get_dir_path();
     boost::property_tree::ptree get_ptree_node(const std::string &filename);
+
+protected:
+    boost::property_tree::ptree pt;
 };
 
 class LexerConfig: public Config{
 public:
-    std::unordered_set<std::string> get_category_set(const std::string &category_name);
-    std::unordered_set<std::string> get_reserved_set(){return this->get_category_set("reserved"); }
+    LexerConfig():Config("lexer.json"){}
+    std::unordered_set<std::string> get_reserved_set();
     std::unordered_set<char> get_punctuation_set();
-
-private:
-    std::string filename = "lexer.json";
 };
 
 #endif /* CONFIG_H */

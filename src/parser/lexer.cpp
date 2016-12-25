@@ -36,8 +36,6 @@ const Lexer &Lexer::operator=(Lexer &&lexer){
 }
 
 std::vector<std::pair<std::string, std::string>> Lexer::tokenize(const std::string &str){
-    std::cout << "tokenize begin" << std::endl;
-
     this->iter = str.cbegin();
     this->iter_end = str.cend();
     int r_count = 0;
@@ -48,7 +46,6 @@ std::vector<std::pair<std::string, std::string>> Lexer::tokenize(const std::stri
         }
         std::pair<std::string, std::string> token;
         auto ch = *iter;
-        std::cout << "ch:" << ch << std::endl;
         if (ch == '_' || std::isalpha(ch))
             token = identifier_process();
         else if (this->is_specail_char_trigger(ch))
@@ -71,7 +68,6 @@ std::vector<std::pair<std::string, std::string>> Lexer::tokenize(const std::stri
             iter++;
             continue;
         } else {
-            std::cout << "one char not recognite:" << ch << std::endl;
             return tokens;
         }
         tokens.push_back(token);
@@ -81,7 +77,6 @@ std::vector<std::pair<std::string, std::string>> Lexer::tokenize(const std::stri
 
 // 处理标识符
 std::pair<std::string, std::string> Lexer::identifier_process(){
-    std::cout << "identifier_process begin" << std::endl;
     std::pair<std::string, std::string> ret;
     std::string word;
     while (iter != iter_end && std::isalpha(*iter)){
@@ -100,14 +95,12 @@ std::pair<std::string, std::string> Lexer::identifier_process(){
 
 // 处理特殊符
 std::pair<std::string, std::string> Lexer::punctuation_procerss(){
-    std::cout << "punctuation_procerss begin" << std::endl;
     std::string word = boost::lexical_cast<std::string>(*iter);
     iter++;
     return std::make_pair(word, word);
 }
 
 std::pair<std::string, std::string> Lexer::number_process(){
-    std::cout << "number_process begin" << std::endl;
     std::string word;
     std::string category = "int";
     while (iter != iter_end){
@@ -126,7 +119,6 @@ std::pair<std::string, std::string> Lexer::number_process(){
 }
 
 std::string Lexer::number_float_process(){
-    std::cout << "number_float_process begin" << std::endl;
     std::string word;
     while (iter != iter_end){
         if (std::isalnum(*iter)){
@@ -141,7 +133,6 @@ std::string Lexer::number_float_process(){
 }
 
 std::pair<std::string, std::string> Lexer::string_process(){
-    std::cout << "string_process begin" << std::endl;
     std::string word;
     char rpair = *iter;
     iter++;
@@ -154,7 +145,6 @@ std::pair<std::string, std::string> Lexer::string_process(){
 }
 
 std::pair<std::string, std::string> Lexer::div_and_comment_process(){
-    std::cout << "div_and_comment_process begin" << std::endl;
     std::pair<std::string, std::string> token;
     iter++;
     if (iter!=iter_end && *iter != '*')
@@ -172,7 +162,6 @@ std::pair<std::string, std::string> Lexer::div_and_comment_process(){
 }
 
 std::pair<std::string, std::string> Lexer::minus_and_comment_process(){
-    std::cout << "minus_and_comment_process begin" << std::endl;
     iter++;
     if (iter!=iter_end && *iter != '-')
         return std::make_pair("-", "-");

@@ -9,7 +9,7 @@
     begin [shape = none]
     punct [shape = doublecircle]
 
-    begin -> punct [ label = "[punctuation]: , * = < >..." ]
+    begin -> punct [ label = "[punctuation] like [,|*|=|<|>]..." ]
     }
     #+END_SRC
 
@@ -23,14 +23,13 @@
      rankdir = LR;
      node [shape = circle];
      begin [shape = none];
-     end [shape = doublecircle];
-     Minus [shape = doublecircle];
-     M2 [shape = doublecircle];
-
-     begin -> Minus [label = "'-'"];
-     Minus -> M2 [label = "'-'"];
-     M2 -> end [label = "'\\n'"];
-     M2 -> M2 [label = "other input except '\\n'"];
+     M0 [shape = doublecircle];
+     M1 [shape = doublecircle];
+     MINUS [shape = doublecircle];
+     begin -> MINUS [label = "[-]"];
+     MINUS -> M0 [label = "[-]"];
+     M0 -> M1 [label = "[\\n]"];
+     M0 -> M0 [label = "![\\n]"];
      }
      #+END_SRC
 
@@ -39,20 +38,17 @@
 
 **** /* */注释和除号/的状态机
      #+BEGIN_SRC  dot :file ./comment_fa2.png :exports results
-     digraph C_NFA_1 {
+     digraph C_NFA_2 {
      rankdir = LR;
      node [shape = circle];
-
      begin [shape = none];
-
-     Div [shape = doublecircle];
+     DIV [shape = doublecircle];
      C3 [shape = doublecircle];
-
-     begin -> Div [label = "'/'"];
-     Div -> C1 [label = "'*'"];
-     C1 -> C2 [label = "all input except '*'"];
-     C2 -> C3 [label = "'/'"];
-     C2 -> C1 [label = "all input except '/'"];
+     begin -> DIV [label = "[/]"];
+     DIV -> C1 [label = "[*]"];
+     C1 -> C2 [label = "![*]"];
+     C2 -> C3 [label = "[/]"];
+     C2 -> C1 [label = "![/]"];
      }
      #+END_SRC
 
@@ -61,19 +57,120 @@
 
 *** 普通标识符: 变量等
     #+BEGIN_SRC  dot :file ./identifier.png :exports results
-    digraph C_NFA_1 {
+    digraph indentifier {
     rankdir = LR;
     node [shape = circle];
     begin [shape = none];
-    end [shape = none];
-    Minus [shape = doublecircle];
-    M2 [shape = doublecircle];
-
-    begin -> Minus [label = "'-'"];
-    Minus -> M2 [label = "'-'"];
-    M2 -> end [label = "'\\n'"];
-    M2 -> M2 [label = "other input except '\\n'"];
+    D1 [shape = doublecircle];
+    RESERVED [shape = doublecircle]
+    begin -> D1 [label = "[a-z|A-Z|_]"];
+    D1 -> D1 [label = "[a-z|A-Z|_]"];
+    D1 -> RESERVED [label = "if result in reserved_word set"]
     }
     #+END_SRC
+
+    #+RESULTS:
+    [[file:./identifier.png]]
+
 *** number: 123 1234.4444 
+    #+BEGIN_SRC  dot :file ./number.png :exports results
+    digraph number {
+    rankdir = LR;
+    node [shape = circle];
+    begin [shape = none];
+    INT [shape = doublecircle];
+    TEM [shape = circle];
+    FLOAT [shape = doublecircle];
+    ERROR [shape = circle ];
+    begin -> INT [label = "[0-9]"];
+    INT -> TEM [label = "'.'"];
+    TEM -> FLOAT [label = "[0-9]"];
+    TEM -> ERROR [label = "![0-9]"]
+    FLOAT -> ERROR [label = "'.'"]
+    }
+    #+END_SRC
+
+    #+RESULTS:
+    [[file:./number.png]]
+
 *** 字符串标识: "", ''
+    #+BEGIN_SRC  dot :file ./string.png :exports results
+    digraph string {
+    rankdir = LR;
+    node [shape = circle];
+    begin [shape = none];
+    LEFT [shape = circle];
+    RIGHT [shape = doublecircle];
+
+    begin -> LEFT[label = "lq = \" | \'"];
+    LEFT -> RIGHT [label = "lq"];
+    }
+    #+END_SRC
+
+    #+RESULTS:
+    [[file:./string.png]]
+
+*** Total
+    #+BEGIN_SRC  dot :file ./total_fa.png :exports results
+    digraph total {
+      rankdir = LR;
+      node [shape = circle];
+      begin [shape = none];
+
+      // --- string ---
+      LEFT [shape = circle];
+      RIGHT [shape = doublecircle];
+      // --- number ---
+      INT [shape = doublecircle];
+      TEM [shape = circle];
+      FLOAT [shape = doublecircle];
+      ERROR [shape = circle ];
+      // --- identifier ---
+      begin [shape = none];
+      D1 [shape = doublecircle];
+      RESERVED [shape = doublecircle]
+      // --- [--]comment ---
+      M0 [shape = doublecircle];
+      M1 [shape = doublecircle];
+      MINUS [shape = doublecircle];
+      // --- [/**/]comment ---
+      DIV [shape = doublecircle];
+      C3 [shape = doublecircle];
+      // punctuation
+      PUNCT [shape = doublecircle]
+
+      // string
+      begin -> LEFT[label = "lq = [\" | \' ]"];
+      LEFT -> RIGHT [label = "lq"];
+      
+      // number
+      begin -> INT [label = "[0-9]"];
+      INT -> TEM [label = "[.]"];
+      TEM -> FLOAT [label = "[0-9]"];
+      TEM -> ERROR [label = "![0-9]"]
+      FLOAT -> ERROR [label = "[.]"]
+      
+      // identifier
+      begin -> D1 [label = "[a-z|A-Z|_]"];
+      D1 -> D1 [label = "[a-z|A-Z|_]"];
+      D1 -> RESERVED [label = "if result in reserved_word set"]
+      // [--]comment
+      begin -> MINUS [label = "[-]"];
+      MINUS -> M0 [label = "[-]"];
+      M0 -> M1 [label = "[\\n]"];
+      M0 -> M0 [label = "![\\n]"];
+      // [/**/]comment
+      begin -> DIV [label = "[/]"];
+      DIV -> C1 [label = "[*]"];
+      C1 -> C2 [label = "![*]"];
+      C2 -> C3 [label = "[/]"];
+      C2 -> C1 [label = "![/]"];
+      // punctuation
+      begin -> PUNCT [ label = "[punctuation] like [,|*|=|<|>]..." ]
+    }
+
+
+    #+END_SRC
+
+    #+RESULTS:
+    [[file:./total_fa.png]]

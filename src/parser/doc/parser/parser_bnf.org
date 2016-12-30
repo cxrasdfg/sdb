@@ -1,0 +1,49 @@
+* bnf
+** input
+   input -> statement_list
+
+*** statement_list
+    statement_list -> statement ';' statement_list 
+                    | statement
+
+**** statement
+     statement -> "create" create
+                | "alter" alter
+                | "drop" drop
+                | "insert" insert
+                | "delete" delect
+                | "select" select
+
+***** create
+      create -> "table" table_name '(' column_list ')'
+              | "view" view_name
+
+****** column_list
+       column_list -> column ',' column_list 
+                    | column
+
+******* column
+        column -> "forign" '(' column_name_list ')' "references" table_name
+                | "primary key" '(' column_name_list ')' 
+                | column_name column_def_list
+
+******** column_def_list
+         column_def_list -> column_def column_def_list 
+                          | column_def
+
+********* column_def
+          column_def -> "int"
+                      | "char" '(' int_number ')'
+                      | "varchar" '(' int_number ')'
+                      | "float" '(' int_number ')'
+                      | "smallint"
+                      | "varchar" '(' int_number ')'
+
+******** column_contrains
+         column_contrains -> "primary key" '(' column_name_list ')' 
+                           | "foreign" '(' column_name_list ')' "references" table_name
+
+
+***** alter_table
+
+***** drop_table

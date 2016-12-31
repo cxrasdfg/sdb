@@ -18,134 +18,129 @@ using std::placeholders::_2;
 // ========== Parser function =========
 
 
-std::shared_ptr<AstNode> Parser::parsing(const std::string &str){
+Parser::nodePtrType Parser::parsing(const std::string &str){
     std::cout << "parsing begin" << std::endl;
     is_r_to_deep();
 
     Lexer lexer;
     auto tokens = lexer.tokenize(str);
-    auto vec_ptr = list_processing(tokens.cbegin(), tokens.cend(), ";", 
-            std::bind(&Parser::statement_processing, this, _1, _2));
+    iter = tokens.cbegin();
+    iter_end = tokens.cend();
+    auto vec_ptr = statement_list_processing();
     
     tokenType token("root", "root");
     return std::make_shared<AstNode>(token, vec_ptr);
 }
 
-// === 列表通用递归函数 ===
-// + beg/end token stream的首尾迭代器
-// + sep 递归分割符
-// + fn  节点处理函数
-std::vector<std::shared_ptr<AstNode>>
-Parser::list_processing(tokensIterType beg, 
-        tokensIterType end,
-        std::string sep, 
-        std::function<std::shared_ptr<AstNode>(tokensIterType, tokensIterType)> fn){
+Parser::nodePtrVecType Parser::statement_list_processing(){
     std::cout << "list_processing begin" << std::endl;
     is_r_to_deep();
 
-    tokenType token("list_node", "statement_list_node");
-    std::vector<std::shared_ptr<AstNode>> vec_ptr;
-    auto split_iter = std::find(beg, end, sep);
-    vec_ptr.push_back(fn(beg, split_iter));
-    if (split_iter == end){
-        return vec_ptr;
+    nodePtrVecType ptr_vec;
+    if (iter == iter_end){
+        return ptr_vec;
     }
-    auto statement_list_ptr = list_processing(split_iter+1, end, ";",
-            std::bind(&Parser::statement_processing, this, _1, _2));
-    auto c_beg = statement_list_ptr.cbegin();
-    auto c_end = statement_list_ptr.cend();
-    vec_ptr.insert(vec_ptr.end(), c_beg, c_end);
+    tokenType token("statement_list_node ", "statement_list_node");
+    auto statement_node = statement_processing();
+    ptr_vec.push_back(statement_node);
+    auto vec_ptr = statement_list_processing();
+    vec_ptr.insert(vec_ptr.end(), vec_ptr.begin(), vec_ptr.end());
     return vec_ptr;
 }
 
-std::shared_ptr<AstNode> Parser::statement_processing(tokensIterType beg, tokensIterType end) {
+Parser::nodePtrType Parser::statement_processing() {
     std::cout << "statement_list_processing begin" << std::endl;
     is_r_to_deep();
 
-    auto statement_name = beg->first;
+    auto statement_name = iter->first;
+    iter++;
     if (statement_name == "select")
-        return select_processing(beg+1, end);
+        return select_processing();
     else if (statement_name == "create")
-        return create_processing(beg+1, end);
+        return create_processing();
     else
         exit(1);
 }
 
-std::shared_ptr<AstNode> Parser::create_processing(tokensIterType beg, tokensIterType end){
+Parser::nodePtrType Parser::create_processing(){
     std::cout << "create_processing begin" << std::endl;
     is_r_to_deep();
 
-    std::vector<std::shared_ptr<AstNode>> vec_ptr;
-    auto create_object = beg->first;
+    nodePtrVecType ptr_vec;
+    auto create_object = iter->first;
+    iter++;
     std::string tem_name = "create_";
     tokenType token("statement", tem_name+create_object);
     if (create_object == "table"){
-        auto column_prts = create_table_processing(beg+1, end);
-        vec_ptr.insert(vec_ptr.end(), column_prts.cbegin(), column_prts.cend());
+        ptr_vec = create_table_processing();
     } else if (create_object == "view") {
-        auto column_prts = create_view_processing(beg+1, end);
-        vec_ptr.insert(vec_ptr.end(), column_prts.cbegin(), column_prts.cend());
+        ptr_vec = create_view_processing();
     } else {
         exit(1);
     }
-    return std::make_shared<AstNode>(token, vec_ptr);
+    return std::make_shared<AstNode>(token, ptr_vec);
 }
 
-std::vector<std::shared_ptr<AstNode>> 
-Parser::create_table_processing(tokensIterType beg, tokensIterType end){
+Parser::nodePtrVecType Parser::create_table_processing(){
     std::cout << "statement_list_processing begin" << std::endl;
     is_r_to_deep();
     
-    if ((beg+1)->first!="(" && (end-1)->first!= ")"){
-        std::cout << "column_list_context error" << std::endl;
-        exit(1);
-    }
-    std::vector<std::shared_ptr<AstNode>> vec_ptr;
+    nodePtrVecType ptr_vec;
 
-    tokenType table_name_token("table_name", beg->first);
+    tokenType table_name_token("table_name", iter->first);
+    iter++;
     auto table_name_node = std::make_shared<AstNode>(table_name_token, nullptr);
-    vec_ptr.push_back(table_name_node);
-    auto column_list_ptr = column_def_list_processing(beg+2, end-1);
+    ptr_vec.push_back(table_name_node);
 
-    tokenType column_list_token("column_list", "column_list");
-    auto column_list_node = std::make_shared<AstNode>(column_list_token, column_list_ptr);
-    vec_ptr.push_back(column_list_node);
-    return vec_ptr;
+    auto col_ptr_vec = col_def_list_processing();
+    tokenType col_list_token("column_list", "column_list");
+    ptr_vec.insert(ptr_vec.end(), col_ptr_vec.begin(), col_ptr_vec.end());
+    return ptr_vec;
 }
 
-std::vector<std::shared_ptr<AstNode>>
-Parser::column_def_list_processing(tokensIterType beg, tokensIterType end){
+Parser::nodePtrVecType Parser::col_def_list_processing(){
     std::cout << "statement_list_processing begin" << std::endl;
-    is_r_to_deep();
-    
-    return list_processing(beg, end, ",",
-            std::bind(&Parser::column_def_processing, this, _1, _2));
+    is_r_to_deep();     
+
+    nodePtrVecType ptr_vec;
+    if (iter->first != "("){
+        std::cout << "-(-" << std::endl;
+        exit(1);
+    } else if (iter->first != ")") {
+        return ptr_vec;
+    }
+    iter++;
+    auto ptr = col_def_processing();
+    tokenType token("col_def_list", "col_def_list");
+    ptr_vec.push_back(ptr);
+    auto col_ptr_vec = col_def_list_processing();
+    ptr_vec.insert(ptr_vec.end(), col_ptr_vec.begin(), col_ptr_vec.end());
+    return ptr_vec;
 }
 
-std::shared_ptr<AstNode> 
-Parser::column_def_processing(tokensIterType beg, tokensIterType end){
-    if (beg->second != "indentifier"){
-        std::cout << "column_name must be indentifier!" << std::endl;
+Parser::nodePtrType Parser::col_def_processing(){
+    std::cout << "col_def_processing begin" << std::endl;
+    is_r_to_deep();     
+
+    if (iter == iter_end){
+        std::cout << "error" << std::endl;
+        exit(1);
+    } else if (iter->second != "indentifier"){
+        std::cout << "col_name must be indentifier!" << std::endl;
         exit(1);
     }
-    std::vector<std::shared_ptr<AstNode>> vec_ptr;
+    std::vector<std::shared_ptr<AstNode>> ptr_vec;
+    auto col_name = iter->first;
+    tokenType col_name_token("col_name", col_name);
+    auto col_name_node = std::make_shared<AstNode>(col_name, nullptr);
+    ptr_vec.push_back(col_name_node);
 
-    auto column_name = beg->first;
-    tokenType column_name_token("column_name", column_name);
-    auto column_name_node = std::make_shared<AstNode>(column_name, nullptr);
-    vec_ptr.push_back(column_name_node);
-
-    auto def_ptrs = column_def_context_list_processing(beg+1, end);
-    tokenType token("column_def", "column_def");
-    vec_ptr.insert(vec_ptr.end(), def_ptrs.begin(), def_ptrs.end());
-    return std::make_shared<AstNode>(token, vec_ptr);
+    auto def_ptr_vec = col_def_context_list_processing();
+    tokenType token("col_def", "column_def");
+    ptr_vec.insert(ptr_vec.end(), def_ptr_vec.begin(), def_ptr_vec.end());
+    return std::make_shared<AstNode>(token, ptr_vec);
 }
 
-std::vector<std::shared_ptr<AstNode>>
-Parser::column_def_context_list_processing(tokensIterType beg, tokensIterType end){
-
-}
-std::vector<std::shared_ptr<AstNode>> Parser::create_view_processing(tokensIterType beg, tokensIterType end){
-    std::cout << "statement_list_processing begin" << std::endl;
-    is_r_to_deep();
+Parser::nodePtrVecType Parser::col_def_context_list_processing(){
+    ;
 }

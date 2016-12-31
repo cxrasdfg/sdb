@@ -19,32 +19,30 @@ class Parser{
 public:
     // === Type ===
     using tokenType = std::pair<std::string, std::string>;
-    using tokensType = std::vector<tokenType>;
-    using tokensIterType = tokensType::const_iterator;
+    using tokenVecType = std::vector<tokenType>;
+    using tokenVecIterType = tokenVecType::const_iterator;
+    using nodePtrType = std::shared_ptr<AstNode>;
+    using nodePtrVecType = std::vector<std::shared_ptr<AstNode>>;
 
     Parser(){}
 
-    std::shared_ptr<AstNode> parsing(const std::string &str);
-    std::shared_ptr<AstNode> statement_processing(tokensIterType beg, tokensIterType end);
+    // === Pasring ===
+    nodePtrType parsing(const std::string &str);
+    nodePtrVecType statement_list_processing();
+    nodePtrType statement_processing();
 
-    std::shared_ptr<AstNode> create_processing(tokensIterType beg, tokensIterType end);
-    std::vector<std::shared_ptr<AstNode>> create_table_processing(tokensIterType beg, tokensIterType end);
-    std::vector<std::shared_ptr<AstNode>> column_def_list_processing(tokensIterType beg, tokensIterType end);
-    std::shared_ptr<AstNode> column_def_processing(tokensIterType beg, tokensIterType end);
-    std::vector<std::shared_ptr<AstNode>> column_def_context_list_processing(tokensIterType beg, tokensIterType end);
+    nodePtrType create_processing();
+    nodePtrVecType create_table_processing();
+    nodePtrVecType col_def_list_processing();
+    nodePtrType col_def_processing();
+    nodePtrVecType col_def_context_list_processing();
 
-    std::vector<std::shared_ptr<AstNode>> create_view_processing(tokensIterType beg, tokensIterType end);
+    nodePtrVecType create_view_processing();
 
-    std::shared_ptr<AstNode> select_processing(tokensIterType beg, tokensIterType end);
-    std::shared_ptr<AstNode> insert_processing(tokensIterType beg, tokensIterType end);
-    std::shared_ptr<AstNode> drop_processing(tokensIterType beg, tokensIterType end);
+    nodePtrType select_processing();
+    nodePtrType insert_processing();
+    nodePtrType drop_processing();
 
-    std::vector<std::shared_ptr<AstNode>> list_processing(
-            tokensIterType beg, 
-            tokensIterType end,
-            std::string sep, 
-            std::function<std::shared_ptr<AstNode>(tokensIterType, tokensIterType)> fn);
-    
     void is_r_to_deep(){
         r_count++;
         if (r_count > 100){
@@ -54,6 +52,8 @@ public:
     }
 private:
     u_int r_count = 0;
+    tokenVecType::const_iterator iter;
+    tokenVecType::const_iterator iter_end;
 };
 
 #endif //PARSER_PARSER_HPP

@@ -29,9 +29,9 @@ public:
 
     std::shared_ptr<AstNode> create_processing(tokensIterType beg, tokensIterType end);
     std::vector<std::shared_ptr<AstNode>> create_table_processing(tokensIterType beg, tokensIterType end);
-    std::shared_ptr<AstNode> column_def_list_processing(tokensIterType beg, tokensIterType end);
+    std::vector<std::shared_ptr<AstNode>> column_def_list_processing(tokensIterType beg, tokensIterType end);
     std::shared_ptr<AstNode> column_def_processing(tokensIterType beg, tokensIterType end);
-    std::shared_ptr<AstNode> column_def_context_list_processing(tokensIterType beg, tokensIterType end);
+    std::vector<std::shared_ptr<AstNode>> column_def_context_list_processing(tokensIterType beg, tokensIterType end);
 
     std::vector<std::shared_ptr<AstNode>> create_view_processing(tokensIterType beg, tokensIterType end);
 
@@ -39,7 +39,8 @@ public:
     std::shared_ptr<AstNode> insert_processing(tokensIterType beg, tokensIterType end);
     std::shared_ptr<AstNode> drop_processing(tokensIterType beg, tokensIterType end);
 
-    std::shared_ptr<AstNode> list_processing(tokensIterType beg, 
+    std::vector<std::shared_ptr<AstNode>> list_processing(
+            tokensIterType beg, 
             tokensIterType end,
             std::string sep, 
             std::function<std::shared_ptr<AstNode>(tokensIterType, tokensIterType)> fn);

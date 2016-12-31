@@ -24,15 +24,18 @@ std::shared_ptr<AstNode> Parser::parsing(const std::string &str){
 
     Lexer lexer;
     auto tokens = lexer.tokenize(str);
-    return list_processing(tokens.cbegin(), tokens.cend(), ";", 
+    auto vec_ptr = list_processing(tokens.cbegin(), tokens.cend(), ";", 
             std::bind(&Parser::statement_processing, this, _1, _2));
+    
+    tokenType token("root", "root");
+    return std::make_shared<AstNode>(token, vec_ptr);
 }
 
 // === 列表通用递归函数 ===
 // + beg/end token stream的首尾迭代器
 // + sep 递归分割符
 // + fn  节点处理函数
-std::shared_ptr<AstNode>
+std::vector<std::shared_ptr<AstNode>>
 Parser::list_processing(tokensIterType beg, 
         tokensIterType end,
         std::string sep, 
@@ -43,19 +46,16 @@ Parser::list_processing(tokensIterType beg,
     tokenType token("list_node", "statement_list_node");
     std::vector<std::shared_ptr<AstNode>> vec_ptr;
     auto split_iter = std::find(beg, end, sep);
-    if (beg == end){
-        vec_ptr.push_back(fn(beg, split_iter));
-        return std::make_shared<AstNode>(token, vec_ptr);
-    }
     vec_ptr.push_back(fn(beg, split_iter));
-
-    auto statement_list_ptr = list_processing(split_iter+1, end, 
-            ";", std::bind(&Parser::statement_processing, this, _1, _2));
-    auto c_beg = statement_list_ptr->children.cbegin();
-    auto c_end = statement_list_ptr->children.cend();
+    if (split_iter == end){
+        return vec_ptr;
+    }
+    auto statement_list_ptr = list_processing(split_iter+1, end, ";",
+            std::bind(&Parser::statement_processing, this, _1, _2));
+    auto c_beg = statement_list_ptr.cbegin();
+    auto c_end = statement_list_ptr.cend();
     vec_ptr.insert(vec_ptr.end(), c_beg, c_end);
-    
-    return std::make_shared<AstNode>(token, vec_ptr);
+    return vec_ptr;
 }
 
 std::shared_ptr<AstNode> Parser::statement_processing(tokensIterType beg, tokensIterType end) {
@@ -113,7 +113,7 @@ Parser::create_table_processing(tokensIterType beg, tokensIterType end){
     return vec_ptr;
 }
 
-std::shared_ptr<AstNode>
+std::vector<std::shared_ptr<AstNode>>
 Parser::column_def_list_processing(tokensIterType beg, tokensIterType end){
     std::cout << "statement_list_processing begin" << std::endl;
     is_r_to_deep();
@@ -133,11 +133,15 @@ Parser::column_def_processing(tokensIterType beg, tokensIterType end){
     auto column_name = beg->first;
     tokenType column_name_token("column_name", column_name);
     auto column_name_node = std::make_shared<AstNode>(column_name, nullptr);
+    vec_ptr.push_back(column_name_node);
 
     auto def_ptrs = column_def_context_list_processing(beg+1, end);
+    tokenType token("column_def", "column_def");
+    vec_ptr.insert(vec_ptr.end(), def_ptrs.begin(), def_ptrs.end());
+    return std::make_shared<AstNode>(token, vec_ptr);
 }
 
-std::shared_ptr<AstNode> 
+std::vector<std::shared_ptr<AstNode>>
 Parser::column_def_context_list_processing(tokensIterType beg, tokensIterType end){
 
 }

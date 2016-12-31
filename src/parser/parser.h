@@ -18,7 +18,8 @@
 class Parser{
 public:
     // === Type ===
-    using tokensType = std::vector<std::pair<std::string, std::string>>;
+    using tokenType = std::pair<std::string, std::string>;
+    using tokensType = std::vector<tokenType>;
     using tokensIterType = tokensType::const_iterator;
 
     Parser(){}
@@ -28,8 +29,9 @@ public:
 
     std::shared_ptr<AstNode> create_processing(tokensIterType beg, tokensIterType end);
     std::vector<std::shared_ptr<AstNode>> create_table_processing(tokensIterType beg, tokensIterType end);
-    std::vector<std::shared_ptr<AstNode>> column_def_list_processing(tokensIterType beg, tokensIterType end);
+    std::shared_ptr<AstNode> column_def_list_processing(tokensIterType beg, tokensIterType end);
     std::shared_ptr<AstNode> column_def_processing(tokensIterType beg, tokensIterType end);
+    std::shared_ptr<AstNode> column_def_context_list_processing(tokensIterType beg, tokensIterType end);
 
     std::vector<std::shared_ptr<AstNode>> create_view_processing(tokensIterType beg, tokensIterType end);
 

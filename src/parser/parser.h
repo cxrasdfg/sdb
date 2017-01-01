@@ -36,6 +36,8 @@ public:
     nodePtrVecType col_def_list_processing();
     nodePtrType col_def_processing();
     nodePtrVecType col_def_context_list_processing();
+    nodePtrType col_type_def();
+    nodePtrType col_not_null_def();
 
     nodePtrVecType create_view_processing();
 
@@ -43,13 +45,12 @@ public:
     nodePtrType insert_processing();
     nodePtrType drop_processing();
 
-    void is_r_to_deep(){
-        r_count++;
-        if (r_count > 100){
-            std::cout << "recursion to deep" << std::endl;
-            exit(1);
-        }
-    }
+    // === error ===
+    void print_error(std::string str);
+
+    // === debug ===
+    void is_r_to_deep(std::string str);
+
 private:
     u_int r_count = 0;
     tokenVecType::const_iterator iter;

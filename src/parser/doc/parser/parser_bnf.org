@@ -39,11 +39,11 @@ column_def_context -> type_def
 
 type_def
 type_def -> "int"
-          | "char" '(' int_number ')'
-          | "varchar" '(' int_number ')'
-          | "float" '(' int_number ')'
           | "smallint"
-          | "varchar" '(' int_number ')'
+          | "float" "(" int_number ")"
+          | "char" "(" int_number ")"
+          | "varchar" "(" int_number ")"
+          | "numberic" "(" int_number "," int_number ")"
 
 column_contrains
 column_contrains -> "primary key" '(' column_name_list ')' 

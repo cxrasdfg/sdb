@@ -19,8 +19,7 @@ using std::placeholders::_2;
 
 
 Parser::nodePtrType Parser::parsing(const std::string &str){
-    std::cout << "parsing begin" << std::endl;
-    is_r_to_deep();
+    is_r_to_deep("parsing");
 
     Lexer lexer;
     auto tokens = lexer.tokenize(str);
@@ -33,8 +32,7 @@ Parser::nodePtrType Parser::parsing(const std::string &str){
 }
 
 Parser::nodePtrVecType Parser::statement_list_processing(){
-    std::cout << "list_processing begin" << std::endl;
-    is_r_to_deep();
+    is_r_to_deep("statement_list_processing");
 
     nodePtrVecType ptr_vec;
     if (iter == iter_end){
@@ -49,8 +47,7 @@ Parser::nodePtrVecType Parser::statement_list_processing(){
 }
 
 Parser::nodePtrType Parser::statement_processing() {
-    std::cout << "statement_list_processing begin" << std::endl;
-    is_r_to_deep();
+    is_r_to_deep("statement_processing");
 
     auto statement_name = iter->first;
     iter++;
@@ -63,8 +60,7 @@ Parser::nodePtrType Parser::statement_processing() {
 }
 
 Parser::nodePtrType Parser::create_processing(){
-    std::cout << "create_processing begin" << std::endl;
-    is_r_to_deep();
+    is_r_to_deep("create_processing");
 
     nodePtrVecType ptr_vec;
     auto create_object = iter->first;
@@ -82,8 +78,7 @@ Parser::nodePtrType Parser::create_processing(){
 }
 
 Parser::nodePtrVecType Parser::create_table_processing(){
-    std::cout << "statement_list_processing begin" << std::endl;
-    is_r_to_deep();
+    is_r_to_deep("create_table_processing");
     
     nodePtrVecType ptr_vec;
 
@@ -99,14 +94,14 @@ Parser::nodePtrVecType Parser::create_table_processing(){
 }
 
 Parser::nodePtrVecType Parser::col_def_list_processing(){
-    std::cout << "statement_list_processing begin" << std::endl;
-    is_r_to_deep();     
+    is_r_to_deep("statement_list_processing");     
 
     nodePtrVecType ptr_vec;
     if (iter->first != "("){
         std::cout << "-(-" << std::endl;
         exit(1);
-    } else if (iter->first != ")") {
+    }
+    if (iter->first != ")") {
         return ptr_vec;
     }
     iter++;
@@ -119,8 +114,7 @@ Parser::nodePtrVecType Parser::col_def_list_processing(){
 }
 
 Parser::nodePtrType Parser::col_def_processing(){
-    std::cout << "col_def_processing begin" << std::endl;
-    is_r_to_deep();     
+    is_r_to_deep("col_def_processing");
 
     if (iter == iter_end){
         std::cout << "error" << std::endl;
@@ -142,5 +136,72 @@ Parser::nodePtrType Parser::col_def_processing(){
 }
 
 Parser::nodePtrVecType Parser::col_def_context_list_processing(){
-    ;
+    is_r_to_deep("col_def_list_processing");
+
+    if (iter == iter_end){
+        print_error("def list");
+    }
+    std::unordered_set<std::string> type_def_set = {
+        "int", "char", "varchar", "float", "smallint"
+    };
+    bool was_type_def = false;
+    bool was_not_null_def = false;
+    nodePtrVecType ptr_vec;
+    while (iter != iter_end){
+        auto fst = iter->first;
+        if (fst == ","){
+            iter++;
+            return ptr_vec;
+        } else if (fst == ")"){
+            return ptr_vec;
+        } else if (type_def_set.find(fst) != type_def_set.cend()){
+            auto type_node_ptr = col_type_def();
+            if (was_type_def) print_error("col type already def");
+            ptr_vec.push_back(type_node_ptr);
+            iter++;
+            was_type_def = true;
+        } else if (fst == "not") {
+            if (was_not_null_def) print_error("col not_null already def");
+            ptr_vec.push_back(col_not_null_def());
+        } else {
+            print_error("def not fount");
+        }
+    }
+    return ptr_vec;
+}
+
+Parser::nodePtrType Parser::col_type_def(){
+    auto type_name = iter->first;
+    iter++;
+    tokenType type_def_token("", "type_def");
+    if (type_name == "int" || type_name == "smallint"){
+        type_def_token.first = type_name;
+    }
+    return std::make_shared<AstNode>(type_def_token, nullptr);
+}
+
+Parser::nodePtrType Parser::col_not_null_def(){
+    iter++;
+    if (iter->first == "null"){
+        tokenType not_null_token("not_null", "not_null");
+        return std::make_shared<AstNode>(not_null_token, nullptr);
+    } else {
+        print_error("not null");
+    }
+}
+
+// ========== error processing =========
+void print_error(std::string str){
+    std::cout << "Error:" << str << std::endl;
+    exit(1);
+}
+
+// ========== debug processing =========
+void Parser::is_r_to_deep(std::string str){
+    std::cout << "function:" << str << "begin" << std::endl;
+    r_count++;
+    if (r_count > 100){
+        std::cout << "recursion to deep" << std::endl;
+        exit(1);
+    }
 }

@@ -14,7 +14,7 @@
 
 using std::placeholders::_1;
 using std::placeholders::_2;
-    
+
 // ========== Parser function =========
 
 
@@ -52,7 +52,8 @@ Parser::nodePtrType Parser::statement_processing() {
     auto statement_name = iter->first;
     iter++;
     if (statement_name == "select")
-        return select_processing();
+        //return select_processing();
+        ;
     else if (statement_name == "create")
         return create_processing();
     else
@@ -70,11 +71,12 @@ Parser::nodePtrType Parser::create_processing(){
     if (create_object == "table"){
         ptr_vec = create_table_processing();
     } else if (create_object == "view") {
-        ptr_vec = create_view_processing();
+        //ptr_vec = create_view_processing();
+        ;
     } else {
         exit(1);
     }
-    return std::make_shared<AstNode>(token, ptr_vec);
+    return std::make_shared<AstNode>(token, nodePtrVecType());
 }
 
 Parser::nodePtrVecType Parser::create_table_processing(){
@@ -84,7 +86,7 @@ Parser::nodePtrVecType Parser::create_table_processing(){
 
     tokenType table_name_token("table_name", iter->first);
     iter++;
-    auto table_name_node = std::make_shared<AstNode>(table_name_token, nullptr);
+    auto table_name_node = std::make_shared<AstNode>(table_name_token, ptr_vec);
     ptr_vec.push_back(table_name_node);
 
     auto col_ptr_vec = col_def_list_processing();
@@ -126,7 +128,7 @@ Parser::nodePtrType Parser::col_def_processing(){
     std::vector<std::shared_ptr<AstNode>> ptr_vec;
     auto col_name = iter->first;
     tokenType col_name_token("col_name", col_name);
-    auto col_name_node = std::make_shared<AstNode>(col_name, nullptr);
+    auto col_name_node = std::make_shared<AstNode>(col_name_token, nodePtrVecType());
     ptr_vec.push_back(col_name_node);
 
     auto def_ptr_vec = col_def_context_list_processing();
@@ -177,21 +179,21 @@ Parser::nodePtrType Parser::col_type_def(){
     if (type_name == "int" || type_name == "smallint"){
         type_def_token.first = type_name;
     }
-    return std::make_shared<AstNode>(type_def_token, nullptr);
+    return std::make_shared<AstNode>(type_def_token, nodePtrVecType());
 }
 
 Parser::nodePtrType Parser::col_not_null_def(){
     iter++;
     if (iter->first == "null"){
         tokenType not_null_token("not_null", "not_null");
-        return std::make_shared<AstNode>(not_null_token, nullptr);
+        return std::make_shared<AstNode>(not_null_token, nodePtrVecType());
     } else {
         print_error("not null");
     }
 }
 
 // ========== error processing =========
-void print_error(std::string str){
+void Parser::print_error(std::string str){
     std::cout << "Error:" << str << std::endl;
     exit(1);
 }

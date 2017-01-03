@@ -1,4 +1,4 @@
 -- test
-select *
-from good
-where name = "good";
+create table T(
+    id, int 
+);

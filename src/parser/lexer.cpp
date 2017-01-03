@@ -14,25 +14,32 @@
 #include "lexer.h"
 // --------- Lexer Function --------
 
-Lexer::Lexer(){
-    LexerConfig cfg;
-    this->punctuation_set = cfg.get_punctuation_set();
-    this->reserved_word = cfg.get_reserved_set();
-}
-
 const Lexer &Lexer::operator=(const Lexer &lexer){
     if (this == &lexer){
         return *this;
     }
     LexerConfig cfg;
-    this->punctuation_set = cfg.get_punctuation_set();
-    this->reserved_word = cfg.get_reserved_set();
     this->tokens = lexer.tokens;
     return *this;
 }
 
 const Lexer &Lexer::operator=(Lexer &&lexer){
     return lexer;
+}
+
+bool Lexer::is_punctuation_char(char ch){
+    auto char_set = cfg.get_punctuation_set();
+    return char_set.find(ch) != char_set.end();
+}
+
+bool Lexer::is_reserved_word(const std::string &str){
+    auto str_set = cfg.get_reserved_set();
+    return str_set.find(str) != str_set.end();
+}
+
+bool Lexer::is_type_word(const std::string &str){
+    auto str_set = cfg.get_type_set();
+    return str_set.find(str) != str_set.end();
 }
 
 std::vector<std::pair<std::string, std::string>> Lexer::tokenize(const std::string &str){
@@ -48,7 +55,7 @@ std::vector<std::pair<std::string, std::string>> Lexer::tokenize(const std::stri
         auto ch = *iter;
         if (ch == '_' || std::isalpha(ch))
             token = identifier_process();
-        else if (this->is_specail_char_trigger(ch))
+        else if (is_punctuation_char(ch))
             token = punctuation_procerss();
         else if (ch > '0' && ch <'9')
             token = number_process();
@@ -87,9 +94,15 @@ std::pair<std::string, std::string> Lexer::identifier_process(){
     //for (auto x : reserved_word) {
         //std::cout << x << std::endl;
     //}
-    std::string word_up = word;
-    boost::algorithm::to_upper(word_up);
-    ret.second = reserved_word.find(word_up) == reserved_word.end() ? "identifier" : "reserved_word";
+    std::string word_lower = word;
+    boost::algorithm::to_lower(word_lower);
+    if (is_reserved_word(word_lower)){
+        ret.second = "reserved_word";
+    } else if (is_type_word(word_lower)) {
+        ret.second = "type";
+    } else {
+        ret.second = "identifier";
+    }
     return ret;
 }
 

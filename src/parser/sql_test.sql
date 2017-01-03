@@ -1,4 +1,4 @@
 -- test
 create table T(
-    id, int 
+    id int not null
 );

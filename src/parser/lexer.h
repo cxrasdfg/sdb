@@ -8,29 +8,32 @@
 #include <unordered_map>
 #include <boost/lexical_cast.hpp>
 #include <functional>
+#include "../config/config.h"
 
 
 class Lexer{
 public:
-    Lexer();
+    Lexer(){}
     Lexer(const Lexer &lexer){*this=lexer;}
     Lexer(Lexer &&lexer){*this=lexer;}
     const Lexer &operator=(const Lexer &lexer);
     const Lexer &operator=(Lexer &&lexer);
 
-    std::vector<std::pair<std::string, std::string>> tokenize(const std::string &str);
-
-    // 初始状态触发函数
-    bool is_specail_char_trigger(char ch){
-        return this->punctuation_set.find(ch) != this->punctuation_set.cend();
-    }
+    // special set
+    bool is_punctuation_char(char ch);
+    bool is_reserved_word(const std::string &str);
+    bool is_type_word(const std::string &str);
     
+    // tokenozie
+    std::vector<std::pair<std::string, std::string>> tokenize(const std::string &str);
     // 状态处理函数
     std::pair<std::string, std::string> identifier_process();
     std::pair<std::string, std::string> punctuation_procerss();
 
+    // number
     std::pair<std::string, std::string> number_process();
     std::string number_float_process();
+    // string
     std::pair<std::string, std::string> string_process();
 
     // 注释部分
@@ -40,11 +43,8 @@ public:
 private:
     // token集，lexer返回的值
     std::vector<std::pair<std::string, std::string>> tokens;
-
-    // 特殊集合
-    std::unordered_set<char> punctuation_set;
-    std::unordered_set<std::string> reserved_word;
-
+    // config
+    LexerConfig cfg;
     std::string::const_iterator iter;
     std::string::const_iterator iter_end;
 };

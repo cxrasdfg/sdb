@@ -16,7 +16,11 @@ boost::filesystem::path Config::get_dir_path(){
     return bf::path(__FILE__).parent_path();
 }
 
-boost::property_tree::ptree  Config::get_ptree_node(const std::string &filename){
+boost::property_tree::ptree Config::get_ptree_node(){
+    return get_ptree_node(filename);
+}
+
+boost::property_tree::ptree Config::get_ptree_node(const std::string &filename){
     namespace bf = boost::filesystem;
     bf::path file_path(filename);
     std::fstream fs((this->get_dir_path() / file_path).generic_string());
@@ -26,22 +30,37 @@ boost::property_tree::ptree  Config::get_ptree_node(const std::string &filename)
     boost::property_tree::read_json(ss, pt);
     return pt;
 }
+    
+std::unordered_set<std::string> Config::get_str_set(const std::string &category_name){
+    return get_str_set(filename, category_name);
+}
 
-// ======== LexerConfig Function =========
-std::unordered_set<std::string> LexerConfig::get_reserved_set(){
+std::unordered_set<std::string> Config::get_str_set(const std::string &filename,
+        const std::string &category_name){
     std::unordered_set<std::string> category_set;
-    auto array_pt = pt.get_child("reserved");
-    for (auto x : array_pt) {
+    auto pt = get_ptree_node(filename);
+    auto set_pt = pt.get_child(category_name);
+    for (auto x : set_pt) {
         category_set.insert(x.second.data());
     }
     return category_set;
 }
 
+// ======== LexerConfig Function =========
+std::unordered_set<std::string> LexerConfig::get_reserved_set(){
+    return get_str_set("reserved");
+}
+
+std::unordered_set<std::string> LexerConfig::get_type_set(){
+    return get_str_set("type");
+}
+
 std::unordered_set<char> LexerConfig::get_punctuation_set(){
+    std::unordered_set<char> char_set;
+    auto pt = get_ptree_node();
     auto str_pt = pt.get_child("punctuation");
-    std::unordered_set<char> ret;
     for (auto ch: str_pt.data()){
-        ret.insert(ch);
+        char_set.insert(ch);
     }
-    return ret;
+    return char_set;
 }

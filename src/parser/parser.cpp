@@ -14,9 +14,10 @@
 
 using std::placeholders::_1;
 using std::placeholders::_2;
+using namespace ParserType;
 
 // ========== Parser function =========
-Parser::nodePtrType Parser::parsing(const std::string &str){
+nodePtrType Parser::parsing(const std::string &str){
     is_r_to_deep("parsing");
 
     Lexer lexer;
@@ -29,7 +30,7 @@ Parser::nodePtrType Parser::parsing(const std::string &str){
     return std::make_shared<AstNode>(token, vec_ptr);
 }
 
-Parser::nodePtrVecType Parser::statement_list_processing(){
+nodePtrVecType Parser::statement_list_processing(){
     is_r_to_deep("statement_list_processing");
 
     nodePtrVecType ptr_vec;
@@ -44,7 +45,7 @@ Parser::nodePtrVecType Parser::statement_list_processing(){
     return vec_ptr;
 }
 
-Parser::nodePtrType Parser::statement_processing() {
+nodePtrType Parser::statement_processing() {
     is_r_to_deep("statement_processing");
 
     auto statement_name = get_token().first;
@@ -62,7 +63,7 @@ Parser::nodePtrType Parser::statement_processing() {
     return statement_node;
 }
 
-Parser::nodePtrType Parser::create_processing(){
+nodePtrType Parser::create_processing(){
     is_r_to_deep("create_processing");
 
     nodePtrVecType ptr_vec;
@@ -80,7 +81,7 @@ Parser::nodePtrType Parser::create_processing(){
     return std::make_shared<AstNode>(token, nodePtrVecType());
 }
 
-Parser::nodePtrVecType Parser::create_table_processing(){
+nodePtrVecType Parser::create_table_processing(){
     is_r_to_deep("create_table_processing");
     
     nodePtrVecType ptr_vec;
@@ -99,7 +100,7 @@ Parser::nodePtrVecType Parser::create_table_processing(){
     return ptr_vec;
 }
 
-Parser::nodePtrVecType Parser::col_def_list_processing(){
+nodePtrVecType Parser::col_def_list_processing(){
     is_r_to_deep("col_def_list_processing");     
 
     nodePtrVecType ptr_vec;
@@ -115,7 +116,7 @@ Parser::nodePtrVecType Parser::col_def_list_processing(){
     return ptr_vec;
 }
 
-Parser::nodePtrType Parser::col_def_processing(){
+nodePtrType Parser::col_def_processing(){
     is_r_to_deep("col_def_processing");
 
     if (iter == iter_end){
@@ -138,7 +139,7 @@ Parser::nodePtrType Parser::col_def_processing(){
     return std::make_shared<AstNode>(token, ptr_vec);
 }
 
-Parser::nodePtrVecType Parser::col_def_context_list_processing(){
+nodePtrVecType Parser::col_def_context_list_processing(){
     is_r_to_deep("col_def_context_list_processing");
 
     if (iter == iter_end){
@@ -175,7 +176,7 @@ Parser::nodePtrVecType Parser::col_def_context_list_processing(){
     return ptr_vec;
 }
 
-Parser::nodePtrType Parser::col_type_def(){
+nodePtrType Parser::col_type_def(){
     auto type_name = get_token().first;
     tokenType type_def_token("", "type_def");
     if (type_name == "int" || type_name == "smallint"){
@@ -185,7 +186,7 @@ Parser::nodePtrType Parser::col_type_def(){
     return std::make_shared<AstNode>(type_def_token, nodePtrVecType());
 }
 
-Parser::nodePtrType Parser::col_not_null_def(){
+nodePtrType Parser::col_not_null_def(){
     next_token();
     if (get_token().first != "null")
         print_error("not null");

@@ -14,41 +14,34 @@
 #include <memory>
 
 #include "ast.h"
+#include "type.h"
 
 class Parser{
 public:
-    // === Type ===
-    using tokenType = std::pair<std::string, std::string>;
-    using tokenVecType = std::vector<tokenType>;
-    using tokenVecIterType = tokenVecType::const_iterator;
-    using nodePtrType = std::shared_ptr<AstNode>;
-    using nodePtrVecType = std::vector<std::shared_ptr<AstNode>>;
-
     Parser(){}
-
     // === Pasring ===
-    nodePtrType parsing(const std::string &str);
-    nodePtrVecType statement_list_processing();
-    nodePtrType statement_processing();
+    ParserType::nodePtrType parsing(const std::string &str);
+    ParserType::nodePtrVecType statement_list_processing();
+    ParserType::nodePtrType statement_processing();
 
-    nodePtrType create_processing();
-    nodePtrVecType create_table_processing();
-    nodePtrVecType col_def_list_processing();
-    nodePtrType col_def_processing();
-    nodePtrVecType col_def_context_list_processing();
-    nodePtrType col_type_def();
-    nodePtrType col_not_null_def();
+    ParserType::nodePtrType create_processing();
+    ParserType::nodePtrVecType create_table_processing();
+    ParserType::nodePtrVecType col_def_list_processing();
+    ParserType::nodePtrType col_def_processing();
+    ParserType::nodePtrVecType col_def_context_list_processing();
+    ParserType::nodePtrType col_type_def();
+    ParserType::nodePtrType col_not_null_def();
 
-    nodePtrVecType create_view_processing();
+    ParserType::nodePtrVecType create_view_processing();
 
-    nodePtrType select_processing();
-    nodePtrType insert_processing();
-    nodePtrType drop_processing();
+    ParserType::nodePtrType select_processing();
+    ParserType::nodePtrType insert_processing();
+    ParserType::nodePtrType drop_processing();
 
     // about iter
     void next_token(){iter++;}
     bool is_end()const{return iter == iter_end; }
-    tokenType get_token()const{return *iter; }
+    ParserType::tokenType get_token()const{return *iter; }
 
     // === error ===
     void print_error(std::string str);
@@ -58,8 +51,8 @@ public:
 
 private:
     u_int r_count = 0;
-    tokenVecType::const_iterator iter;
-    tokenVecType::const_iterator iter_end;
+    ParserType::tokenVecType::const_iterator iter;
+    ParserType::tokenVecType::const_iterator iter_end;
 };
 
 #endif //PARSER_PARSER_HPP

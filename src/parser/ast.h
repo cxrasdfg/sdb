@@ -14,7 +14,7 @@ public:
     AstNode(const std::pair<std::string, std::string> &t, std::vector<std::shared_ptr<AstNode>> c)
         :token(t), children(c){}
 
-    std::string get_node_dot()const;
+    std::string get_node_dot(int num)const;
 };
 
 class Ast{
@@ -23,7 +23,7 @@ public:
     Ast(std::shared_ptr<AstNode> r):root(r){}
     
     void output_graphviz(const std::string &filename)const;
-    std::string get_graphviz(std::shared_ptr<AstNode> ptr)const;
+    std::string get_graphviz(std::shared_ptr<AstNode> ptr, int num)const;
 
 private:
     std::shared_ptr<AstNode> root;

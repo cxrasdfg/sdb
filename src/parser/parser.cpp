@@ -17,17 +17,18 @@ using std::placeholders::_2;
 using namespace ParserType;
 
 // ========== Parser function =========
-nodePtrType Parser::parsing(const std::string &str){
+Ast Parser::parsing(const std::string &str){
     is_r_to_deep("parsing");
 
     Lexer lexer;
     auto tokens = lexer.tokenize(str);
     iter = tokens.cbegin();
     iter_end = tokens.cend();
-    auto vec_ptr = statement_list_processing();
+    auto ptr_vec = statement_list_processing();
     
     tokenType token("root", "root");
-    return std::make_shared<AstNode>(token, vec_ptr);
+    auto root = std::make_shared<AstNode>(token, ptr_vec);
+    return Ast(root);
 }
 
 nodePtrVecType Parser::statement_list_processing(){
@@ -40,9 +41,9 @@ nodePtrVecType Parser::statement_list_processing(){
     tokenType token("statement_list_node ", "statement_list_node");
     auto statement_node = statement_processing();
     ptr_vec.push_back(statement_node);
-    auto vec_ptr = statement_list_processing();
-    vec_ptr.insert(vec_ptr.end(), vec_ptr.begin(), vec_ptr.end());
-    return vec_ptr;
+    auto sl_ptr_vec = statement_list_processing();
+    ptr_vec.insert(ptr_vec.end(), sl_ptr_vec.begin(), sl_ptr_vec.end());
+    return ptr_vec;
 }
 
 nodePtrType Parser::statement_processing() {
@@ -78,7 +79,7 @@ nodePtrType Parser::create_processing(){
     } else {
         print_error(std::string("not found this create_object:"+create_object));
     }
-    return std::make_shared<AstNode>(token, nodePtrVecType());
+    return std::make_shared<AstNode>(token, ptr_vec);
 }
 
 nodePtrVecType Parser::create_table_processing(){

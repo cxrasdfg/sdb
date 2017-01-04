@@ -20,7 +20,7 @@ class Parser{
 public:
     Parser(){}
     // === Pasring ===
-    ParserType::nodePtrType parsing(const std::string &str);
+    Ast parsing(const std::string &str);
     ParserType::nodePtrVecType statement_list_processing();
     ParserType::nodePtrType statement_processing();
 

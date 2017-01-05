@@ -45,14 +45,9 @@ bool Lexer::is_type_word(const std::string &str){
 std::vector<std::pair<std::string, std::string>> Lexer::tokenize(const std::string &str){
     this->iter = str.cbegin();
     this->iter_end = str.cend();
-    int r_count = 0;
-    while (iter != iter_end) {
-        r_count++;
-        if (r_count > 100) {
-            break;
-        }
+    while (!is_end()) {
         std::pair<std::string, std::string> token;
-        auto ch = *iter;
+        auto ch = get_char();
         if (ch == '_' || std::isalpha(ch))
             token = identifier_process();
         else if (is_punctuation_char(ch))
@@ -72,7 +67,7 @@ std::vector<std::pair<std::string, std::string>> Lexer::tokenize(const std::stri
                 continue;
         }
         else if (std::isspace(ch)){
-            iter++;
+            next_char();
             continue;
         } else {
             return tokens;
@@ -86,14 +81,13 @@ std::vector<std::pair<std::string, std::string>> Lexer::tokenize(const std::stri
 std::pair<std::string, std::string> Lexer::identifier_process(){
     std::pair<std::string, std::string> ret;
     std::string word;
-    while (iter != iter_end && (std::isalpha(*iter) || std::isalnum(*iter) || *iter == '_')){
-        word += *iter;
-        iter++;
+    auto ch = get_char();
+    while (!is_end() && (std::isalpha(ch) || std::isalnum(ch) || ch == '_')){
+        word += ch;
+        next_char();
+        ch = get_char();
     }
     ret.first = word;
-    //for (auto x : reserved_word) {
-        //std::cout << x << std::endl;
-    //}
     std::string word_lower = word;
     boost::algorithm::to_lower(word_lower);
     if (is_reserved_word(word_lower)){
@@ -108,20 +102,20 @@ std::pair<std::string, std::string> Lexer::identifier_process(){
 
 // 处理特殊符
 std::pair<std::string, std::string> Lexer::punctuation_procerss(){
-    std::string word = boost::lexical_cast<std::string>(*iter);
-    iter++;
+    std::string word = boost::lexical_cast<std::string>(get_char());
+    next_char();
     return std::make_pair(word, word);
 }
 
 std::pair<std::string, std::string> Lexer::number_process(){
     std::string word;
     std::string category = "int";
-    while (iter != iter_end){
-        if (std::isalnum(*iter)){
-            word += *iter;
-            iter++;
-        } else if (*iter == '.') {
-            iter++;
+    while (!is_end()){
+        if (std::isalnum(get_char())){
+            word += get_char();
+            next_char();
+        } else if (get_char() == '.') {
+            next_char();
             word = '.' + number_float_process();
             category = "float";
         } else {
@@ -133,10 +127,10 @@ std::pair<std::string, std::string> Lexer::number_process(){
 
 std::string Lexer::number_float_process(){
     std::string word;
-    while (iter != iter_end){
-        if (std::isalnum(*iter)){
-            word += *iter;
-            iter++;
+    while (!is_end()){
+        if (std::isalnum(get_char())){
+            word += get_char();
+            next_char();
         } else {
             std::cout << "float Error" << std::endl;
             return word;
@@ -147,40 +141,40 @@ std::string Lexer::number_float_process(){
 
 std::pair<std::string, std::string> Lexer::string_process(){
     std::string word;
-    char rpair = *iter;
-    iter++;
-    while (iter != iter_end && *iter != rpair){
-        word += *iter;
-        iter++;
+    char rpair = get_char();
+    next_char();
+    while (!is_end() && get_char() != rpair){
+        word += get_char();
+        next_char();
     }
-    iter++;
+    next_char();
     return std::make_pair(word, "string");
 }
 
 std::pair<std::string, std::string> Lexer::div_and_comment_process(){
     std::pair<std::string, std::string> token;
-    iter++;
-    if (iter!=iter_end && *iter != '*')
+    next_char();
+    if (iter!=iter_end && get_char() != '*')
         return std::make_pair("/", "/");
-    iter++;
-    while (iter != iter_end) {
-        if (*iter == '*'){ 
+    next_char();
+    while (!is_end()) {
+        if (get_char() == '*'){ 
             if ((iter+1) != iter_end && *(iter+1) == '/')
                 iter += 2;
                 return token;
         }
-        iter++;
+        next_char();
     }
     return token;
 }
 
 std::pair<std::string, std::string> Lexer::minus_and_comment_process(){
-    iter++;
-    if (iter!=iter_end && *iter != '-')
+    next_char();
+    if (iter!=iter_end && get_char() != '-')
         return std::make_pair("-", "-");
     else 
-        while (iter!=iter_end && *iter!='\n')
-            iter++;
-    iter++;
+        while (iter!=iter_end && get_char()!='\n')
+            next_char();
+    next_char();
     return std::make_pair("", "");
 }

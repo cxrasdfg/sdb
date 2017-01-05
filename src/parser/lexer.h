@@ -40,6 +40,11 @@ public:
     std::pair<std::string, std::string> div_and_comment_process();
     std::pair<std::string, std::string> minus_and_comment_process();
 
+    // iter
+    bool is_end()const{return iter == iter_end;}
+    char get_char()const{return *iter;}
+    char next_char(){return *iter++;}
+
 private:
     // token集，lexer返回的值
     std::vector<std::pair<std::string, std::string>> tokens;

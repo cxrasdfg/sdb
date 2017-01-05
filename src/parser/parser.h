@@ -39,7 +39,7 @@ public:
     ParserType::nodePtrType drop_processing();
 
     // about iter
-    void next_token(){iter++;}
+    ParserType::tokenType next_token(){return *iter++;}
     bool is_end()const{return iter == iter_end; }
     std::string get_token_name()const{return iter->first; }
     std::string get_token_category()const{return iter->second; }

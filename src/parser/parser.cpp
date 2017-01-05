@@ -52,6 +52,7 @@ nodePtrVecType Parser::statement_list_processing(){
 nodePtrType Parser::statement_processing() {
     is_r_to_deep("statement_processing");
 
+    std::cout << get_token_name() << std::endl;
     auto statement_name = get_token_name();
     next_token();
     nodePtrType statement_node;
@@ -95,6 +96,7 @@ nodePtrVecType Parser::create_table_processing(){
     auto token_name = get_token_name();
     std::cout << "table_name:" << token_name << std::endl;
     next_token();
+
     auto table_name_node = std::make_shared<AstNode>(token_name, "table_name", nodePtrVecType());
     ptr_vec.push_back(table_name_node);
 
@@ -116,7 +118,6 @@ nodePtrVecType Parser::col_def_list_processing(){
     auto fst = get_token_name();
     if (fst != ")") {
         auto ptr = col_def_processing();
-        tokenType token("col_def_list", "col_def_list");
         ptr_vec.push_back(ptr);
         auto col_ptr_vec = col_def_list_processing();
         ptr_vec.insert(ptr_vec.end(), col_ptr_vec.begin(), col_ptr_vec.end());
@@ -185,11 +186,18 @@ nodePtrVecType Parser::col_def_context_list_processing(){
 
 nodePtrType Parser::col_type_def(){
     auto type_name = get_token_name();
-    if (type_name == "int" || type_name == "smallint"){
-        ;
-    }
+    nodePtrType node_ptr = std::make_shared<AstNode>(type_name, "type_def", nodePtrVecType());
     next_token();
-    return std::make_shared<AstNode>(type_name, "type_def", nodePtrVecType());
+    if (type_name != "int" && type_name != "smallint"){
+        auto fst = next_token().first;
+        auto scd = next_token();
+        auto trd = next_token().first;
+        if (fst != "(" && scd.second != "identifier" && trd != ")"){
+            print_error(type_name+" def error");
+        }
+        node_ptr->children.push_back(std::make_shared<AstNode>(scd.first, "type_length", nodePtrVecType()));
+    }
+    return node_ptr;
 }
 
 nodePtrType Parser::col_not_null_def(){

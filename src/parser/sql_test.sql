@@ -2,6 +2,5 @@
 create table T(
     id int not null,
     idd int,
-    iddd int,
-    idddd int
+    name varchar(10)
 );

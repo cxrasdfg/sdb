@@ -86,7 +86,7 @@ std::vector<std::pair<std::string, std::string>> Lexer::tokenize(const std::stri
 std::pair<std::string, std::string> Lexer::identifier_process(){
     std::pair<std::string, std::string> ret;
     std::string word;
-    while (iter != iter_end && std::isalpha(*iter)){
+    while (iter != iter_end && (std::isalpha(*iter) || std::isalnum(*iter) || *iter == '_')){
         word += *iter;
         iter++;
     }

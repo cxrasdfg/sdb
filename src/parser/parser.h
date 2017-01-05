@@ -32,6 +32,11 @@ public:
     ParserType::nodePtrType col_type_def();
     ParserType::nodePtrType col_not_null_def();
 
+    ParserType::nodePtrType col_primary_def_processing();
+    ParserType::nodePtrVecType col_name_list_processing();
+    ParserType::nodePtrType col_foreign_def_processing();
+    ParserType::nodePtrType col_check_def_processing();
+
     ParserType::nodePtrVecType create_view_processing();
 
     ParserType::nodePtrType select_processing();

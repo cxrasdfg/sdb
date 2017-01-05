@@ -115,13 +115,20 @@ nodePtrVecType Parser::col_def_list_processing(){
     is_r_to_deep("col_def_list_processing");     
 
     nodePtrVecType ptr_vec;
+    nodePtrType ptr;
     auto fst = get_token_name();
-    if (fst != ")") {
-        auto ptr = col_def_processing();
-        ptr_vec.push_back(ptr);
-        auto col_ptr_vec = col_def_list_processing();
-        ptr_vec.insert(ptr_vec.end(), col_ptr_vec.begin(), col_ptr_vec.end());
+    if (fst == ")"){
+        return ptr_vec;
+    } else if (fst == "primary") {
+        ptr = col_primary_def_processing();
+    } else if (fst == "foreign"){
+        ptr = col_foreign_def_processing();
+    } else {
+        ptr = col_def_processing();
     }
+    ptr_vec.push_back(ptr);
+    auto col_ptr_vec = col_def_list_processing();
+    ptr_vec.insert(ptr_vec.end(), col_ptr_vec.begin(), col_ptr_vec.end());
     return ptr_vec;
 }
 
@@ -208,6 +215,36 @@ nodePtrType Parser::col_not_null_def(){
     next_token();
     return std::make_shared<AstNode>("not_null", "not_null", nodePtrVecType());
 }
+
+nodePtrType Parser::col_primary_def_processing(){
+    is_r_to_deep("col_primary_def_processing");
+
+    auto fst = next_token().first;
+    auto scd = next_token().first;
+    auto trd = next_token().first;
+    if (fst != "primary" && scd != "key" && trd != "(")
+        print_error("primary def error");
+    auto ptr_vec = col_name_list_processing();
+    return std::make_shared<AstNode>("primary_def", "primary_def", ptr_vec);
+}
+
+nodePtrVecType Parser::col_name_list_processing(){
+    is_r_to_deep("col_name_list");
+
+    nodePtrVecType ptr_vec;
+    while (!is_end() && get_token_name() != ")"){
+        auto ptr = std::make_shared<AstNode>(get_token_name(), "col_name", nodePtrVecType());
+        ptr_vec.push_back(ptr);
+        next_token();
+    }
+    next_token();
+    return ptr_vec;
+}
+
+nodePtrType Parser::col_foreign_def_processing(){
+
+}
+ParserType::nodePtrType col_check_def_processing();
 
 // ========== error processing =========
 void Parser::print_error(std::string str){

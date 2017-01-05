@@ -23,9 +23,9 @@ column_def_list -> column_def column_def_list
                  | column_def 
 
 column_def
-column_def -> "forign" '(' column_name_list ')' "references" table_name
-            | "primary" "key" '(' column_name_list ')' 
-            | "check" '(' predicate ')'
+column_def -> "foreign" "(" column_name_list ")" "references" table_name
+            | "primary" "key" "(" column_name_list ")" 
+            | "check" "(" predicate ")"
             | column_name column_def_context_list
 
 column_def_context_list

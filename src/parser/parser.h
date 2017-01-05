@@ -41,7 +41,8 @@ public:
     // about iter
     void next_token(){iter++;}
     bool is_end()const{return iter == iter_end; }
-    ParserType::tokenType get_token()const{return *iter; }
+    std::string get_token_name()const{return iter->first; }
+    std::string get_token_category()const{return iter->second; }
 
     // === error ===
     void print_error(std::string str);

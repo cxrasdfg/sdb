@@ -31,7 +31,7 @@ Ast Parser::parsing(const std::string &str){
     return Ast(root);
 }
 
-// statement_list -> statement statement_list
+// statement_list -> statement ";" statement_list
 //                 | statement
 nodePtrVecType Parser::statement_list_processing(){
     is_r_to_deep("statement_list_processing");
@@ -47,8 +47,11 @@ nodePtrVecType Parser::statement_list_processing(){
     return ptr_vec;
 }
 
-// statement -> create
-//            | select
+// statement -> "create" create
+//            | "drop" drop
+//            | "insert" insert
+//            | "delete" delete
+//            | "select" select
 nodePtrType Parser::statement_processing() {
     is_r_to_deep("statement_processing");
 
@@ -57,7 +60,7 @@ nodePtrType Parser::statement_processing() {
     next_token();
     nodePtrType statement_node;
     if (statement_name == "select")
-        ;
+        statement_node = select_processing();
     else if (statement_name == "create")
         statement_node = create_processing();
     else 
@@ -224,16 +227,18 @@ nodePtrType Parser::col_primary_def_processing(){
     auto trd = next_token().first;
     if (fst != "primary" && scd != "key" && trd != "(")
         print_error("primary def error");
-    auto ptr_vec = col_name_list_processing();
+    auto ptr_vec = col_name_list_processing(")");
     next_token();
     return std::make_shared<AstNode>("primary_def", "primary_def", ptr_vec);
 }
 
-nodePtrVecType Parser::col_name_list_processing(){
+nodePtrVecType Parser::col_name_list_processing(const std::string &terminor){
     is_r_to_deep("col_name_list");
 
     nodePtrVecType ptr_vec;
-    while (!is_end() && get_token_name() != ")"){
+    while (!is_end() && get_token_name() != terminor){
+        if (get_token_name() == ",")
+            next_token();
         auto ptr = std::make_shared<AstNode>(get_token_name(), "col_name", nodePtrVecType());
         ptr_vec.push_back(ptr);
         next_token();
@@ -252,7 +257,7 @@ nodePtrType Parser::col_foreign_def_processing(){
     if (is_end() || fst != "("){
         print_error("foreign def");
     }
-    auto col_ptr_vec = col_name_list_processing();
+    auto col_ptr_vec = col_name_list_processing(")");
     auto col_name_list_ptr = std::make_shared<AstNode>("col_name_list", "col_name_list", col_ptr_vec);
     fst = next_token().first;
     if (fst != "references"){
@@ -266,7 +271,47 @@ nodePtrType Parser::col_foreign_def_processing(){
     return std::make_shared<AstNode>("foreign_def", "foreign_def", ptr_vec);
 }
 
-ParserType::nodePtrType col_check_def_processing();
+// === select ===
+// select -> "select" select_list "from" table_name_list "where" predicate
+nodePtrType Parser::select_processing(){
+    is_r_to_deep("select_processing begin");
+    next_token();
+
+    nodePtrVecType ptr_vec;
+
+    // column name node
+    auto col_name_list = col_name_list_processing("from");
+    auto col_name_list_ptr = std::make_shared<AstNode>("col_name", "col_name", col_name_list);
+    ptr_vec.push_back(col_name_list_ptr);
+
+    // from node
+    auto from_ptr = select_from_processing();
+    ptr_vec.push_back(from_ptr);
+
+    return std::make_shared<AstNode>("select", "selct", ptr_vec);
+}
+
+// input: table name list
+nodePtrType Parser::select_from_processing(){
+    is_r_to_deep("select_from_processing");
+
+    nodePtrVecType ptr_vec;
+    while (!is_end()){
+        auto fst = get_token_name();
+        if (fst == ","){
+            next_token();
+        } else if (fst == "where") {
+            next_token();
+            break;
+        } else if (fst == ";"){
+            break;
+        }
+        auto ptr = std::make_shared<AstNode>(fst, "table_name", nodePtrVecType());
+        ptr_vec.push_back(ptr);
+        next_token();
+    }
+    return std::make_shared<AstNode>("from", "from", ptr_vec);
+}
 
 // ========== error processing =========
 void Parser::print_error(std::string str){

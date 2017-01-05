@@ -10,8 +10,8 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include <boost/lexical_cast.hpp>
 #include <memory>
+#include <unordered_set>
 
 #include "ast.h"
 #include "type.h"
@@ -24,26 +24,33 @@ public:
     ParserType::nodePtrVecType statement_list_processing();
     ParserType::nodePtrType statement_processing();
 
+    // === create
     ParserType::nodePtrType create_processing();
+    // create_table
     ParserType::nodePtrVecType create_table_processing();
     ParserType::nodePtrVecType col_def_list_processing();
     ParserType::nodePtrType col_def_processing();
     ParserType::nodePtrVecType col_def_context_list_processing();
     ParserType::nodePtrType col_type_def();
     ParserType::nodePtrType col_not_null_def();
-
     ParserType::nodePtrType col_primary_def_processing();
-    ParserType::nodePtrVecType col_name_list_processing();
+    // get column name list node ptr
+    ParserType::nodePtrVecType col_name_list_processing(const std::string &terminor);
     ParserType::nodePtrType col_foreign_def_processing();
     ParserType::nodePtrType col_check_def_processing();
 
+    // create_view
     ParserType::nodePtrVecType create_view_processing();
 
+    // === select
     ParserType::nodePtrType select_processing();
+    ParserType::nodePtrType select_list_processing();
+    ParserType::nodePtrType select_from_processing();
+
     ParserType::nodePtrType insert_processing();
     ParserType::nodePtrType drop_processing();
 
-    // about iter
+    // === about iter ===
     ParserType::tokenType next_token(){return *iter++;}
     bool is_end()const{return iter == iter_end; }
     std::string get_token_name()const{return iter->first; }

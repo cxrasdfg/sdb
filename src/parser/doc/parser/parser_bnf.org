@@ -4,14 +4,14 @@ input -> statement_list
 
 statement_list
 statement_list -> statement ';' statement_list 
-                    | statement
+                | statement
 
 statement
 statement -> "create" create
            | "alter" alter
            | "drop" drop
            | "insert" insert
-           | "delete" delect
+           | "delete" delete
            | "select" select
 
 create

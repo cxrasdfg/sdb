@@ -225,6 +225,7 @@ nodePtrType Parser::col_primary_def_processing(){
     if (fst != "primary" && scd != "key" && trd != "(")
         print_error("primary def error");
     auto ptr_vec = col_name_list_processing();
+    next_token();
     return std::make_shared<AstNode>("primary_def", "primary_def", ptr_vec);
 }
 
@@ -241,9 +242,30 @@ nodePtrVecType Parser::col_name_list_processing(){
     return ptr_vec;
 }
 
+// column_def -> "foreign" "(" column_name_list ")" "references" table_name
 nodePtrType Parser::col_foreign_def_processing(){
-
+    is_r_to_deep("col_foreign_def_processing begin");
+    
+    nodePtrVecType ptr_vec;
+    next_token();
+    auto fst = next_token().first;
+    if (is_end() || fst != "("){
+        print_error("foreign def");
+    }
+    auto col_ptr_vec = col_name_list_processing();
+    auto col_name_list_ptr = std::make_shared<AstNode>("col_name_list", "col_name_list", col_ptr_vec);
+    fst = next_token().first;
+    if (fst != "references"){
+        print_error("need take a references table");
+    }
+    fst = next_token().first;
+    std::cout << fst << std::endl;
+    auto table_name_ptr = std::make_shared<AstNode>(fst, "table_name", nodePtrVecType());
+    ptr_vec.push_back(table_name_ptr);
+    ptr_vec.push_back(col_name_list_ptr);
+    return std::make_shared<AstNode>("foreign_def", "foreign_def", ptr_vec);
 }
+
 ParserType::nodePtrType col_check_def_processing();
 
 // ========== error processing =========

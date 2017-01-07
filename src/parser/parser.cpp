@@ -301,6 +301,7 @@ nodePtrType Parser::select_from_processing(){
         auto fst = get_token_name();
         if (fst == ","){
             next_token();
+            continue;
         } else if (fst == "where") {
             next_token();
             break;

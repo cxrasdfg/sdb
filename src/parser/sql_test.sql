@@ -7,5 +7,5 @@ create table T(
     foreign (id) references T2
 );
 */
-select id, id2
-from good;
+select id, id2, id3
+from good2;

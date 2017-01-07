@@ -237,8 +237,10 @@ nodePtrVecType Parser::col_name_list_processing(const std::string &terminor){
 
     nodePtrVecType ptr_vec;
     while (!is_end() && get_token_name() != terminor){
-        if (get_token_name() == ",")
+        if (get_token_name() == ","){
             next_token();
+            continue;
+        }
         auto ptr = std::make_shared<AstNode>(get_token_name(), "col_name", nodePtrVecType());
         ptr_vec.push_back(ptr);
         next_token();
@@ -275,7 +277,6 @@ nodePtrType Parser::col_foreign_def_processing(){
 // select -> "select" select_list "from" table_name_list "where" predicate
 nodePtrType Parser::select_processing(){
     is_r_to_deep("select_processing begin");
-    next_token();
 
     nodePtrVecType ptr_vec;
 

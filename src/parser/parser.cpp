@@ -51,7 +51,7 @@ nodePtrVecType Parser::statement_list_processing(){
 //            | "drop" drop
 //            | "insert" insert
 //            | "delete" delete
-//            | "select" select
+//            | "select" query
 nodePtrType Parser::statement_processing() {
     is_r_to_deep("statement_processing");
 
@@ -60,7 +60,7 @@ nodePtrType Parser::statement_processing() {
     next_token();
     nodePtrType statement_node;
     if (statement_name == "select")
-        statement_node = select_processing();
+        statement_node = query_processing();
     else if (statement_name == "create")
         statement_node = create_processing();
     else 
@@ -273,28 +273,33 @@ nodePtrType Parser::col_foreign_def_processing(){
     return std::make_shared<AstNode>("foreign_def", "foreign_def", ptr_vec);
 }
 
-// === select ===
-// select -> "select" select_list "from" table_name_list "where" predicate
-nodePtrType Parser::select_processing(){
-    is_r_to_deep("select_processing begin");
+// === query ===
+// query -> "select" select_list "from" table_name_list "where" predicate
+nodePtrType Parser::query_processing(){
+    is_r_to_deep("query_processing begin");
 
     nodePtrVecType ptr_vec;
 
     // column name node
     auto col_name_list = col_name_list_processing("from");
-    auto col_name_list_ptr = std::make_shared<AstNode>("col_name", "col_name", col_name_list);
+    auto col_name_list_ptr = std::make_shared<AstNode>("select", "col_name_list", col_name_list);
     ptr_vec.push_back(col_name_list_ptr);
 
     // from node
-    auto from_ptr = select_from_processing();
+    auto from_ptr = query_from_processing();
     ptr_vec.push_back(from_ptr);
-
-    return std::make_shared<AstNode>("select", "selct", ptr_vec);
+    // where node
+    if (get_token_name() == "where"){
+        next_token();
+        auto where_ptr = query_where_processing();
+        ptr_vec.push_back(where_ptr);
+    }
+    return std::make_shared<AstNode>("query", "query", ptr_vec);
 }
 
 // input: table name list
-nodePtrType Parser::select_from_processing(){
-    is_r_to_deep("select_from_processing");
+nodePtrType Parser::query_from_processing(){
+    is_r_to_deep("query_from_processing");
 
     nodePtrVecType ptr_vec;
     while (!is_end()){
@@ -302,17 +307,27 @@ nodePtrType Parser::select_from_processing(){
         if (fst == ","){
             next_token();
             continue;
-        } else if (fst == "where") {
-            next_token();
-            break;
-        } else if (fst == ";"){
+        } else if (fst == "where" || fst == ";") {
             break;
         }
         auto ptr = std::make_shared<AstNode>(fst, "table_name", nodePtrVecType());
         ptr_vec.push_back(ptr);
         next_token();
     }
-    return std::make_shared<AstNode>("from", "from", ptr_vec);
+    return std::make_shared<AstNode>("from", "table_name_list", ptr_vec);
+}
+
+nodePtrType Parser::query_where_processing(){
+    is_r_to_deep("query_where_processing begin");
+
+    auto ptr = predicate_processing();
+    nodePtrVecType ptr_vec;
+    ptr_vec.push_back(ptr);
+    return std::make_shared<AstNode>("where", "where", ptr_vec);
+}
+
+nodePtrType Parser::predicate_processing(){
+    is_r_to_deep("predicate_processing begin");
 }
 
 // ========== error processing =========

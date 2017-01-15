@@ -42,13 +42,17 @@ public:
     // create_view
     ParserType::nodePtrVecType create_view_processing();
 
-    // === select
-    ParserType::nodePtrType select_processing();
-    ParserType::nodePtrType select_list_processing();
-    ParserType::nodePtrType select_from_processing();
+    // === query
+    ParserType::nodePtrType query_processing();
+    ParserType::nodePtrType query_list_processing();
+    ParserType::nodePtrType query_from_processing();
+    ParserType::nodePtrType query_where_processing();
 
     ParserType::nodePtrType insert_processing();
     ParserType::nodePtrType drop_processing();
+
+    // === predicate
+    ParserType::nodePtrType predicate_processing();
 
     // === about iter ===
     ParserType::tokenType next_token(){return *iter++;}

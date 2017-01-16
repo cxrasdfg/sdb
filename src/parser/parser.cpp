@@ -328,8 +328,7 @@ nodePtrType Parser::query_where_processing(){
     return std::make_shared<AstNode>("where", "where", ptr_vec);
 }
 
-// predicate -> predicate_or
-// predicate_or -> predicate_and predicate_or_dot
+// predicate -> predicate_and predicate_or_dot
 // predicate_or_dot -> "or" predicate_and predicate_or_dot
 //                   | ""
 // predicate_and -> predicate_bool predicate_and_dot
@@ -340,6 +339,8 @@ nodePtrType Parser::query_where_processing(){
 //                 | predicate_bool_not_eq
 nodePtrType Parser::predicate_processing(){
     is_r_to_deep("predicate_processing begin");
+
+    return predicate_or_processing();
 }
 
 // ========== error processing =========

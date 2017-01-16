@@ -274,7 +274,8 @@ nodePtrType Parser::col_foreign_def_processing(){
 }
 
 // === query ===
-// query -> "select" select_list "from" table_name_list "where" predicate
+// query -> "select" select_list "from" table_name_list "where" predicate ";"
+// query -> "select" select_list "from" table_name_list ";"
 nodePtrType Parser::query_processing(){
     is_r_to_deep("query_processing begin");
 
@@ -317,6 +318,7 @@ nodePtrType Parser::query_from_processing(){
     return std::make_shared<AstNode>("from", "table_name_list", ptr_vec);
 }
 
+// where
 nodePtrType Parser::query_where_processing(){
     is_r_to_deep("query_where_processing begin");
 
@@ -326,6 +328,16 @@ nodePtrType Parser::query_where_processing(){
     return std::make_shared<AstNode>("where", "where", ptr_vec);
 }
 
+// predicate -> predicate_or
+// predicate_or -> predicate_and predicate_or_dot
+// predicate_or_dot -> "or" predicate_and predicate_or_dot
+//                   | ""
+// predicate_and -> predicate_bool predicate_and_dot
+// predicate_and_dot -> "and" predicate_bool predicate_and_dot
+//                    | ""
+// predicate_bool -> predicate_bool_not
+//                 | predicate_bool_eq
+//                 | predicate_bool_not_eq
 nodePtrType Parser::predicate_processing(){
     is_r_to_deep("predicate_processing begin");
 }

@@ -328,20 +328,64 @@ nodePtrType Parser::query_where_processing(){
     return std::make_shared<AstNode>("where", "where", ptr_vec);
 }
 
-// predicate -> predicate_and predicate_or_dot
+// predicate -> predicate_or
+// predicate_or -> predicate_and predicate_or_dot
 // predicate_or_dot -> "or" predicate_and predicate_or_dot
 //                   | ""
 // predicate_and -> predicate_bool predicate_and_dot
 // predicate_and_dot -> "and" predicate_bool predicate_and_dot
 //                    | ""
-// predicate_bool -> predicate_bool_not
-//                 | predicate_bool_eq
-//                 | predicate_bool_not_eq
+// predicate_bool -> col_name op value
 nodePtrType Parser::predicate_processing(){
     is_r_to_deep("predicate_processing begin");
 
-    return predicate_or_processing();
+    auto or_ptr = predicate_or_processing();
+    nodePtrVecType ptr_vec;
+    ptr_vec.push_back(or_ptr);
+    return std::make_shared<AstNode>("predicate", "predicate", ptr_vec);
 }
+
+nodePtrType Parser::predicate_or_processing(){
+    is_r_to_deep("predicate_or_processing begin");
+
+    nodePtrVecType ptr_vec;
+    auto and_ptr = predicate_and_processing();
+    ptr_vec.push_back(and_ptr);
+    auto or_ptr_vec = predicate_or_dot_processing();
+    if (!or_ptr_vec.empty())
+        ptr_vec.insert(ptr_vec.end(), or_ptr_vec.cbegin(), or_ptr_vec.cend());
+    return std::make_shared<AstNode>("predicate_or", "predicate_or", ptr_vec);
+}
+
+nodePtrType Parser::predicate_and_processing(){
+    is_r_to_deep("predicate_and_processing begin");
+
+    nodePtrVecType ptr_vec;
+    auto not_ptr = predicate_bool_processing();
+    ptr_vec.push_back(not_ptr);
+    auto dot_ptr_vec = predicate_and_dot_processing();
+    if (!dot_ptr_vec.empty())
+        ptr_vec.insert(ptr_vec.end(), dot_ptr_vec.cbegin(), dot_ptr_vec.cend());
+    return std::make_shared<AstNode>("predicate_and", "predicate_and", ptr_vec);
+}
+
+nodePtrType Parser::predicate_bool_processing(){
+    is_r_to_deep("predicate_bool_processing begin");
+    
+    auto col_name = next_token();
+    auto op = next_token();
+    auto value = next_token();
+
+    nodePtrVecType ptr_vec;
+    ptr_vec.push_back(std::make_shared<AstNode>(col_name, "col_name", nodePtrVecType()));
+    ptr_vec.push_back(std::make_shared<AstNode>(op, "bool_op", nodePtrVecType()));
+    ptr_vec.push_back(std::make_shared<AstNode>(value, "bool_value", nodePtrVecType()));
+    
+    return std::make_shared<AstNode>("bool", "bool", ptr_vec);
+}
+
+nodePtrVecType Parser::predicate_and_dot_processing(){}
+nodePtrVecType Parser::predicate_or_dot_processing(){}
 
 // ========== error processing =========
 void Parser::print_error(std::string str){

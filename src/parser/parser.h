@@ -55,7 +55,9 @@ public:
     ParserType::nodePtrType predicate_processing();
     ParserType::nodePtrType predicate_or_processing();
     ParserType::nodePtrType predicate_and_processing();
-    ParserType::nodePtrType predicate_or_dot_processing();
+    ParserType::nodePtrType predicate_bool_processing();
+    ParserType::nodePtrVecType predicate_and_dot_processing();
+    ParserType::nodePtrVecType predicate_or_dot_processing();
 
     // === about iter ===
     ParserType::tokenType next_token(){return *iter++;}

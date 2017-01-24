@@ -9,8 +9,8 @@
 
 std::string AstNode::get_node_dot(int num)const{
     std::string str;
-    str += name+std::to_string(num);
-    str += "[label="+name+"];\n";
+    str += "\""+name+std::to_string(num)+"\"";
+    str += "[label=\""+name+"\"];\n";
     return str;
 }
 
@@ -34,8 +34,8 @@ std::string Ast::get_graphviz(std::shared_ptr<AstNode> ptr, int num)const{
     auto str = ptr->get_node_dot(num);
     int ch_num = num;
     for (auto p :ptr->children) {
-        str += ptr->name+std::to_string(num);
-        str += "->"+p->name+std::to_string(ch_num)+"\n";
+        str += "\""+ptr->name+std::to_string(num)+"\"";
+        str += "->\""+p->name+std::to_string(ch_num)+"\"\n";
         str += get_graphviz(p, ch_num)+"\n";
         ch_num++;
     }

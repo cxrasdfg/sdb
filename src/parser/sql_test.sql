@@ -8,4 +8,5 @@ create table T(
 );
 */
 select id, id2, id3
-from good1, good2;
+from good1, good2
+where id = 1;

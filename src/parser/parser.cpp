@@ -372,9 +372,9 @@ nodePtrType Parser::predicate_and_processing(){
 nodePtrType Parser::predicate_bool_processing(){
     is_r_to_deep("predicate_bool_processing begin");
     
-    auto col_name = next_token();
-    auto op = next_token();
-    auto value = next_token();
+    auto col_name = next_token().first;
+    auto op = next_token().first;
+    auto value = next_token().first;
 
     nodePtrVecType ptr_vec;
     ptr_vec.push_back(std::make_shared<AstNode>(col_name, "col_name", nodePtrVecType()));
@@ -384,8 +384,43 @@ nodePtrType Parser::predicate_bool_processing(){
     return std::make_shared<AstNode>("bool", "bool", ptr_vec);
 }
 
-nodePtrVecType Parser::predicate_and_dot_processing(){}
-nodePtrVecType Parser::predicate_or_dot_processing(){}
+nodePtrVecType Parser::predicate_and_dot_processing(){
+    is_r_to_deep("predicate_and_dot_processing begin");
+    
+    if (is_end() || get_token_name() == "or" || get_token_name() == ";"){
+        return nodePtrVecType();
+    } 
+
+    if (get_token_name() != "and"){
+        print_error("need a and");
+    }
+
+    nodePtrVecType ptr_vec;
+    auto ptr = predicate_bool_processing();
+    ptr_vec.push_back(ptr);
+    auto and_ptr_vec = predicate_and_dot_processing();
+    ptr_vec.insert(ptr_vec.end(), and_ptr_vec.begin(), and_ptr_vec.end());
+    return ptr_vec;
+}
+
+nodePtrVecType Parser::predicate_or_dot_processing(){
+    is_r_to_deep("predicate_or_dot_processing begin");
+    
+    if (is_end() || get_token_name() == ";"){
+        return nodePtrVecType();
+    } 
+
+    if (get_token_name() != "or"){
+        print_error("need a or");
+    }
+
+    nodePtrVecType ptr_vec;
+    auto ptr = predicate_and_processing();
+    ptr_vec.push_back(ptr);
+    auto or_ptr_vec = predicate_or_dot_processing();
+    ptr_vec.insert(ptr_vec.end(), or_ptr_vec.begin(), or_ptr_vec.end());
+    return ptr_vec;
+}
 
 // ========== error processing =========
 void Parser::print_error(std::string str){

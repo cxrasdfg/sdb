@@ -387,6 +387,7 @@ nodePtrType Parser::predicate_bool_processing(){
 nodePtrVecType Parser::predicate_and_dot_processing(){
     is_r_to_deep("predicate_and_dot_processing begin");
     
+    std::cout << get_token_name() << std::endl;
     if (is_end() || get_token_name() == "or" || get_token_name() == ";"){
         return nodePtrVecType();
     } 
@@ -395,6 +396,7 @@ nodePtrVecType Parser::predicate_and_dot_processing(){
         print_error("need a and");
     }
 
+    next_token();
     nodePtrVecType ptr_vec;
     auto ptr = predicate_bool_processing();
     ptr_vec.push_back(ptr);
@@ -414,6 +416,8 @@ nodePtrVecType Parser::predicate_or_dot_processing(){
         print_error("need a or");
     }
 
+    next_token();
+    std::cout << "or:" << get_token_name() << std::endl;
     nodePtrVecType ptr_vec;
     auto ptr = predicate_and_processing();
     ptr_vec.push_back(ptr);

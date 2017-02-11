@@ -5,6 +5,7 @@
 #include <list>
 #include <stdexcept>
 #include <iostream>
+#include <string>
 #include <boost/variant.hpp>
 
 template <typename KeyType, typename DataType>
@@ -57,6 +58,7 @@ public:
     
     void insert(const KeyType &key, const DataType &data);
     void remove(const KeyType &key, const DataType &data);
+    DataType find(const KeyType &key)const{return find_r(key, root);}
     void print()const;
 
 private:
@@ -67,10 +69,11 @@ private:
     nodePtrType insert_r(const KeyType &key, const DataType &data, nodePtrType ptr);
     // 递归删除
     void remove_r(const KeyType &key, const DataType &data, nodePtrType &ptr);
+    DataType find_r(const KeyType &key, nodePtrType ptr)const;
     // 递归清理
     void clear_r(nodePtrType ptr);
     // === 异常处理 ===
-    void throw_error(std::string str){
+    void throw_error(const std::string &str)const{
         throw std::runtime_error(str);
     }
 };
@@ -160,6 +163,32 @@ void BpTree<KeyType, DataType>::remove(const KeyType &key, const DataType &data)
 }
 
 template <typename KeyType, typename DataType>
+DataType BpTree<KeyType, DataType>::find_r(const KeyType &key, nodePtrType ptr)const{
+    if (ptr == nullptr){
+        std::string err_str = "Error: can't find key:";
+        throw_error(err_str+std::to_string(key)+"\n");
+    }
+    bool is_leaf = ptr->is_leaf();
+    if (is_leaf){
+        for (auto &x: ptr->lst) {
+            if (key == x.first){
+                return *(ptr->get_data_ptr(x.second));
+            } else if (key < x.first){
+                std::string err_str = "Error: can't find key:";
+                throw_error(err_str+std::to_string(key)+"\n");
+            }
+        }
+    } else {
+        for (auto &x: ptr->lst) {
+            if (key == x.first || key < x.first){
+                return find_r(key, ptr->get_node_ptr(x.second));
+            }
+        }
+    }
+    return find_r(key, ptr->end_ptr);
+}
+
+template <typename KeyType, typename DataType>
 typename BpTree<KeyType, DataType>::nodePtrType
 BpTree<KeyType, DataType>::insert_r(const KeyType &key, const DataType &data, nodePtrType ptr){
     if (ptr == nullptr){
@@ -235,4 +264,5 @@ void BpTree<KeyType, DataType>::print()const{
         }
     }
 }
+
 #endif /* BPTREE_H */

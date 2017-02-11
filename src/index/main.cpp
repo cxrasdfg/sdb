@@ -14,5 +14,8 @@ int main(void){
     t.insert(10, 3);
     t.insert(3, 3);
     t.print();
+
+    auto x = t.find(3);
+    std::cout << x << std::endl;
     return 0;
 }

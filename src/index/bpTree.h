@@ -22,6 +22,8 @@ struct BptNode {
     // === 节点操作 ===
     // 判断是否叶节点
     bool is_leaf()const;
+    // 判断元素是否过少，是否需要合并
+    bool is_less()const;
     // 分裂节点
     std::shared_ptr<BptNode> split();
     // 合并节点
@@ -57,18 +59,19 @@ public:
     }
     
     void insert(const KeyType &key, const DataType &data);
-    void remove(const KeyType &key, const DataType &data);
+    void remove(const KeyType &key);
     DataType find(const KeyType &key)const{return find_r(key, root);}
     void print()const;
 
 private:
     nodePtrType root;
     size_t block_size;
-    size_t node_len;
+    size_t node_max_size;
+    bool is_node_less(nodePtrType ptr)const;
     // 递归插入
     nodePtrType insert_r(const KeyType &key, const DataType &data, nodePtrType ptr);
     // 递归删除
-    void remove_r(const KeyType &key, const DataType &data, nodePtrType &ptr);
+    bool remove_r(const KeyType &key, nodePtrType &ptr);
     DataType find_r(const KeyType &key, nodePtrType ptr)const;
     // 递归清理
     void clear_r(nodePtrType ptr);
@@ -108,16 +111,84 @@ KeyType BptNode<KeyType, DataType>::last_key()const{
 }
 
 // ========== BpTree Function =========
+// ---------- BpTree Public Function ---------
 template <typename KeyType, typename DataType>
 BpTree<KeyType, DataType>::BpTree():root(nullptr), block_size(100){
     size_t key_size = sizeof(KeyType);
     size_t ptr_type_size = 64/8;
-    node_len = (block_size-ptr_type_size)/(ptr_type_size+key_size);
+    node_max_size = (block_size-ptr_type_size)/(ptr_type_size+key_size);
 }
 
 template <typename KeyType, typename DataType>
 BpTree<KeyType, DataType>::~BpTree(){
     clear();
+}
+
+template <typename KeyType, typename DataType>
+void BpTree<KeyType, DataType>::insert(const KeyType &key, const DataType &data){
+    if (root == nullptr){
+        root = std::make_shared<nodeType>();
+        root->lst.push_back(std::make_pair(key, std::make_shared<DataType>(data)));
+        return;
+    }
+    auto left_ptr = insert_r(key, data, root);
+    if (left_ptr != nullptr){
+        auto new_root = std::make_shared<nodeType>();
+        new_root->lst.push_back(std::make_pair(left_ptr->last_key(), left_ptr));
+        new_root->end_ptr = root;
+        root = new_root;
+    }
+}
+
+template <typename KeyType, typename DataType>
+void BpTree<KeyType, DataType>::remove(const KeyType &key){
+    remove_r(key, root);
+    if (root->lst.size() == 0){
+        root = nullptr;
+    } else if (root->end_ptr == nullptr){
+        root = root->lst.begin()->second;
+    }
+}
+
+template <typename KeyType, typename DataType>
+void BpTree<KeyType, DataType>::print()const{
+    std::list<nodePtrType> deq;
+    deq.push_back(root);
+    int sub_count = 1;
+    while (!deq.empty()) {
+        auto ptr = deq.front(); 
+        deq.pop_front();
+        sub_count--;
+        if (ptr == nullptr){
+            std::cout << "nullptr";
+            continue;
+        }
+        bool is_leaf = ptr->is_leaf();
+        std::cout << "[ ";
+        for (auto iter = ptr->lst.begin(); iter != ptr->lst.end(); iter++){
+            if (is_leaf){
+                std::cout << iter->first << ":";
+                std::cout << *(BptNode<KeyType, DataType>::get_data_ptr(iter->second)) << " ";
+            } else {
+                std::cout << iter->first << " ";
+                deq.push_back(BptNode<KeyType, DataType>::get_node_ptr(iter->second));
+            }
+        }
+        if (!is_leaf){
+            deq.push_back(ptr->end_ptr);
+        }
+        std::cout << "]";
+        if (sub_count == 0){
+            sub_count = deq.size();
+            std::cout << std::endl;
+        }
+    }
+}
+
+// ---------- BpTree Private Function ---------
+template <typename KeyType, typename DataType>
+bool BpTree<KeyType, DataType>::is_node_less(nodePtrType ptr)const{
+    return (node_max_size/2) > ptr->lst.size();
 }
 
 template <typename KeyType, typename DataType>
@@ -139,27 +210,6 @@ void BpTree<KeyType, DataType>::clear_r(nodePtrType ptr){
         clear_r(ptr->end_ptr);
     }
     ptr->end_ptr = nullptr;
-}
-
-template <typename KeyType, typename DataType>
-void BpTree<KeyType, DataType>::insert(const KeyType &key, const DataType &data){
-    if (root == nullptr){
-        root = std::make_shared<nodeType>();
-        root->lst.push_back(std::make_pair(key, std::make_shared<DataType>(data)));
-        return;
-    }
-    auto left_ptr = insert_r(key, data, root);
-    if (left_ptr != nullptr){
-        auto new_root = std::make_shared<nodeType>();
-        new_root->lst.push_back(std::make_pair(left_ptr->last_key(), left_ptr));
-        new_root->end_ptr = root;
-        root = new_root;
-    }
-}
-
-template <typename KeyType, typename DataType>
-void BpTree<KeyType, DataType>::remove(const KeyType &key, const DataType &data){
-
 }
 
 template <typename KeyType, typename DataType>
@@ -222,47 +272,22 @@ BpTree<KeyType, DataType>::insert_r(const KeyType &key, const DataType &data, no
             }
         }
     }
-    return (ptr->lst.size() > node_len)? ptr->split(): nullptr;
+    return (ptr->lst.size() > node_max_size)? ptr->split(): nullptr;
 }
 
 template <typename KeyType, typename DataType>
-void BpTree<KeyType, DataType>::remove_r(const KeyType &key, 
-                                         const DataType &data, 
-                                         nodePtrType &ptr){}
-
-template <typename KeyType, typename DataType>
-void BpTree<KeyType, DataType>::print()const{
-    std::list<nodePtrType> deq;
-    deq.push_back(root);
-    int sub_count = 1;
-    while (!deq.empty()) {
-        auto ptr = deq.front(); 
-        deq.pop_front();
-        sub_count--;
-        if (ptr == nullptr){
-            std::cout << "nullptr";
-            continue;
-        }
-        bool is_leaf = ptr->is_leaf();
-        std::cout << "[ ";
-        for (auto iter = ptr->lst.begin(); iter != ptr->lst.end(); iter++){
-            if (is_leaf){
-                std::cout << iter->first << ":";
-                std::cout << *(BptNode<KeyType, DataType>::get_data_ptr(iter->second)) << " ";
-            } else {
-                std::cout << iter->first << " ";
-                deq.push_back(BptNode<KeyType, DataType>::get_node_ptr(iter->second));
-            }
-        }
-        if (!is_leaf){
-            deq.push_back(ptr->end_ptr);
-        }
-        std::cout << "]";
-        if (sub_count == 0){
-            sub_count = deq.size();
-            std::cout << std::endl;
+bool BpTree<KeyType, DataType>::remove_r(const KeyType &key, nodePtrType &ptr){
+    if (ptr == nullptr){
+        throw_error("error");
+    }
+    bool is_leaf = ptr->is_leaf();
+    for (auto iter = ptr->lst.begin(); iter != ptr->lst.end(); iter++){
+        if (key == iter->first && is_leaf) {
+            ptr->erase(iter);
+            return is_node_less(ptr);
+        } else if (key <= iter->first) {
+            auto is_less = remove_r(key, iter->second);
         }
     }
 }
-
 #endif /* BPTREE_H */

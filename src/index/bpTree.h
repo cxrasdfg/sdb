@@ -12,12 +12,10 @@ template <typename KeyType, typename DataType>
 struct BptNode {
     // type
     using lstSecType = boost::variant<std::shared_ptr<DataType>, std::shared_ptr<BptNode>>;
+    using nodePtrType = std::shared_ptr<BptNode>;
 
     std::list<std::pair<KeyType, lstSecType>> lst;
     std::shared_ptr<BptNode> end_ptr;
-
-    //~BptNode(){
-    //}
 
     // === 节点操作 ===
     // 判断是否叶节点
@@ -26,8 +24,6 @@ struct BptNode {
     bool is_less()const;
     // 分裂节点
     std::shared_ptr<BptNode> split();
-    // 合并节点
-    void merge();
     // 获取节点最后的key
     KeyType last_key()const;
     
@@ -54,7 +50,6 @@ public:
     //BpTree &&operator=(const BpTree &&bpt);
     ~BpTree();
     void clear(){
-        clear_r(root);
         root = nullptr;
     }
     
@@ -68,13 +63,13 @@ private:
     size_t block_size;
     size_t node_max_size;
     bool is_node_less(nodePtrType ptr)const;
+    // 合并节点
+    bool node_merge(nodePtrType &ptr_1, nodePtrType &ptr_2);
     // 递归插入
     nodePtrType insert_r(const KeyType &key, const DataType &data, nodePtrType ptr);
     // 递归删除
     bool remove_r(const KeyType &key, nodePtrType &ptr);
     DataType find_r(const KeyType &key, nodePtrType ptr)const;
-    // 递归清理
-    void clear_r(nodePtrType ptr);
     // === 异常处理 ===
     void throw_error(const std::string &str)const{
         throw std::runtime_error(str);
@@ -103,7 +98,18 @@ std::shared_ptr<BptNode<KeyType, DataType>> BptNode<KeyType, DataType>::split(){
 }
 
 template <typename KeyType, typename DataType>
-void BptNode<KeyType, DataType>::merge(){}
+bool BpTree<KeyType, DataType>::node_merge(nodePtrType &ptr_1, nodePtrType &ptr_2){
+    if (!ptr_1->is_leaf()) {
+        ptr_1->lst.push_back(std::make_pair(ptr_1->end_ptr->last_key(), ptr_1->end_ptr));
+    }
+    ptr_2->lst.splice(ptr_2->lst.begin(), ptr_1->lst);
+    if (ptr_2->lst.size() > node_max_size){
+        ptr_1 = ptr_2->split();
+        return false;
+    } else {
+        return true;
+    }
+}
 
 template <typename KeyType, typename DataType>
 KeyType BptNode<KeyType, DataType>::last_key()const{
@@ -144,9 +150,7 @@ template <typename KeyType, typename DataType>
 void BpTree<KeyType, DataType>::remove(const KeyType &key){
     remove_r(key, root);
     if (root->lst.size() == 0){
-        root = nullptr;
-    } else if (root->end_ptr == nullptr){
-        root = root->lst.begin()->second;
+        root = root->end_ptr;
     }
 }
 
@@ -189,27 +193,6 @@ void BpTree<KeyType, DataType>::print()const{
 template <typename KeyType, typename DataType>
 bool BpTree<KeyType, DataType>::is_node_less(nodePtrType ptr)const{
     return (node_max_size/2) > ptr->lst.size();
-}
-
-template <typename KeyType, typename DataType>
-void BpTree<KeyType, DataType>::clear_r(nodePtrType ptr){
-    if (ptr == nullptr)
-        return;
-    bool is_leaf = ptr->is_leaf();
-    for (auto iter = ptr->lst.begin(); iter != ptr->lst.end(); iter++){
-        if (is_leaf){
-            auto &data_ptr = BptNode<KeyType, DataType>::get_data_ptr(iter->second);
-            data_ptr = nullptr;
-        } else {
-            auto &node_ptr = BptNode<KeyType, DataType>::get_node_ptr(iter->second);
-            clear_r(node_ptr);
-            node_ptr = nullptr;
-        }
-    }
-    if (!is_leaf){
-        clear_r(ptr->end_ptr);
-    }
-    ptr->end_ptr = nullptr;
 }
 
 template <typename KeyType, typename DataType>
@@ -281,13 +264,52 @@ bool BpTree<KeyType, DataType>::remove_r(const KeyType &key, nodePtrType &ptr){
         throw_error("error");
     }
     bool is_leaf = ptr->is_leaf();
+    bool is_for_end = true;
     for (auto iter = ptr->lst.begin(); iter != ptr->lst.end(); iter++){
         if (key == iter->first && is_leaf) {
-            ptr->erase(iter);
-            return is_node_less(ptr);
+            ptr->lst.erase(iter);
+            is_for_end = false;
+            break;
+        } else if (key < iter->first && is_leaf) {
+            throw_error("Error: can't find Key");
         } else if (key <= iter->first) {
-            auto is_less = remove_r(key, iter->second);
+            auto iter_sec_ptr = ptr->get_node_ptr(iter->second);
+            bool is_less = remove_r(key, iter_sec_ptr);
+            if (is_less){
+                bool is_one = false;
+                if (std::next(iter, 1) == ptr->lst.end()){
+                    is_one = node_merge(iter_sec_ptr, ptr->end_ptr);
+                } else {
+                    is_one = node_merge(iter_sec_ptr, ptr->get_node_ptr(std::next(iter, 1)->second));
+                }
+                if (is_one){
+                    // 避免iter失效
+                    iter = ptr->lst.erase(iter);
+                }
+            }
+            if (key == iter->first) {
+                iter->first = ptr->get_node_ptr(iter->second)->last_key();
+            }
+            is_for_end = false;
+            break;
         }
     }
+    if (is_for_end){
+        if (is_leaf){
+            throw_error("Error: can't find Key");
+        }
+        else {
+            bool is_less = remove_r(key, ptr->end_ptr);
+            if (is_less) {
+                auto lst_last_ptr = ptr->get_node_ptr(std::prev(ptr->lst.end(), 1)->second);
+                bool is_one = node_merge(lst_last_ptr, ptr->end_ptr);
+                if (is_one) {
+                    ptr->lst.erase(std::prev(ptr->lst.end(), 1));
+                }
+            }
+        }
+    }
+    return is_node_less(ptr);
 }
+
 #endif /* BPTREE_H */

@@ -3,16 +3,13 @@
 
 int main(void){
     BpTree<int, int> t;
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 30; i++) {
         t.insert(i, i);
     }
-    t.remove(3);
-    t.remove(4);
-    t.remove(2);
-    t.remove(0);
-    t.remove(1);
-    t.remove(5);
-    t.remove(11);
+    t.print();
+    for (int i = 0; i < 10; ++i) {
+        t.remove(i);
+    }
     t.print();
 
     return 0;

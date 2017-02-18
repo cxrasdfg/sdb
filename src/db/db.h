@@ -3,6 +3,8 @@
 
 class Db {
 public:
+    read_index();
+    read_record();
 
 private:
 };

@@ -1,4 +1,5 @@
-build/
+*build*/
+db_file/
 .idea/
 .ycm_extra_conf.py
 *test.cpp

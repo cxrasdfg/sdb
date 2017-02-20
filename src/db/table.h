@@ -24,7 +24,8 @@ public:
     RecordList read_record(const std::vector<DB::Type::Pos> &pos_lst)const;
 
     // write
-    void write_record(const RecordList &record, DB::Type::Pos pos);
+    void write_record(const RecordList &record_lst,
+                      const std::vector<DB::Type::Pos> &pos_lst);
 
 private:
     TableProperty property;

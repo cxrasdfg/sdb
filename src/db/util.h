@@ -22,22 +22,23 @@ namespace DB {
     }
 
     namespace Function {
-        size_t get_col_type_size(char col_type){
-            switch (col_type) {
-                case DB::Enum::CHAR :
-                    return 1;
-                case DB::Enum::INT :
-                    return 4;
-                case DB::Enum::FLOAT :
-                    return 8;
-                default:
-                    throw std::runtime_error("Error: col_type");
-            }
-        }
+//        size_t get_col_type_size(char col_type){
+//            switch (col_type) {
+//                case DB::Enum::CHAR :
+//                    return 1;
+//                case DB::Enum::INT :
+//                    return 4;
+//                case DB::Enum::FLOAT :
+//                    return 8;
+//                default:
+//                    throw std::runtime_error("Error: col_type");
+//            }
+//        }
     }
 
     namespace Type {
         using Pos = size_t;
+        using Byte = unsigned char ;
     }
 
 }

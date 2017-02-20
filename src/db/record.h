@@ -4,11 +4,20 @@
 #include <vector>
 #include <string>
 
-class Record {
+#include "table_property.h"
+
+class RecordList {
+public:
+    RecordList()= delete;
+    RecordList(const TableProperty &property):property(property){}
+
+    void record_push_back(const std::string &record_tuple){
+        record_tuple_lst.push_back(record_tuple);
+    }
+
 private:
-    std::vector<std::string> col_name;
-    std::vector<char> record_type;
-    std::vector<std::string> record_lst;
+    TableProperty property;
+    std::vector<std::string> record_tuple_lst;
 };
 
 #endif //MAIN_RECORD_H

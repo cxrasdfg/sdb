@@ -3,63 +3,38 @@
 #include <vector>
 #include <iostream>
 #include <map>
+#include <cstring>
+#include <sys/mman.h>
+#include <ctime>
 
-#include "table.h"
+//#include "table.h"
 
-static std::map<std::string, char> TYPE_CHAR_MAP = {
-        {"int", 0},
-        {"smallint", 1},
-        {"char", 2},
-        {"float", 3}
-};
-static std::map<char, char> TYPE_SIZE_MAP = {
-        {0, 4},
-        {1, 2},
-        {2, 1},
-        {3, 4}
-};
-
-enum class En: char {
-    INT = 0,
-    SMALLINT = 1,
-    CHAR = 2,
-    FLOAT = 3
-};
 
 std::string get_type_str(const std::vector<std::string> &type_lst);
 int get_record_size(const std::vector<std::string> &type_lst);
 std::vector<std::string> get_test_block_data();
 
+void write_test();
+void string_process_test_1(){
+    const int max = 1000000;
+    char src[max];
+    char des[max];
+    for (int i = 0; i < max; ++i) {
+        des[i] = src[i];
+    }
+}
+void string_process_test_2(){
+    const int max = 1000000;
+    char src[max];
+    char des[max];
+    memcpy(des, src, max);
+}
+
 int main(void) {
-    Table table("test", 128);
-    auto data = get_test_block_data();
-    for (const auto &str: data){
-        std::cout << str;
-    }
-    std::cout << std::endl;
-    table.write_block(data, 0, false);
-    data = table.read_block(0, false);
-    for (const auto &str: data){
-        std::cout << str;
-    }
-    std::cout << std::endl;
+    int start = clock();
+    string_process_test_1();
+    std::cout << "time:" << (double)((clock()-start))/CLOCKS_PER_SEC << std::endl;
     return 0;
-}
-
-std::string get_type_str(const std::vector<std::string> &type_lst){
-    std::string str;
-    for (auto &x: type_lst){
-        str += TYPE_CHAR_MAP[x];
-    }
-    return str;
-}
-
-int get_record_size(const std::vector<std::string> &type_lst){
-    int size = 0;
-    for (auto &x: type_lst){
-        size += TYPE_SIZE_MAP[TYPE_CHAR_MAP[x]];
-    }
-    return size;
 }
 
 std::vector<std::string> get_test_block_data(){

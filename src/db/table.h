@@ -1,39 +1,33 @@
-#ifndef DBIO_H
-#define DBIO_H
+#ifndef TABLE_H
+#define TABLE_H
 
-#include <vector>
 #include <string>
+#include <map>
+
 #include "record.h"
+#include "util.h"
+#include "table_property.h"
 
 class Table {
 public:
     Table()= delete;
 //    Table(const Table &table)
-//            :table_name(table.table_name), block_size(table.block_size){}
+//            :table_name(table.table_name), BLOCK_SIZE(table.BLOCK_SIZE){}
 //    Table(Table &&table)
-//            :table_name(table.table_name), block_size(table.block_size){}
-    Table(const std::string &str, size_t size)
-            :table_name(str), block_size(size){}
-//
-    std::string get_file_abs_path(bool is_index);
+//            :table_name(table.table_name), BLOCK_SIZE(table.BLOCK_SIZE){}
+    Table(const TableProperty &property):property(property){}
 
-    // write
-    void write_block(const std::vector<std::string> &data_block, int block_num, bool is_index);
-    void write_record(const Record &record, int block_num);
+    // get
+    std::string get_file_abs_path(bool is_index)const;
 
     //read
-    std::vector<std::string> read_block(int block_num, bool is_index);
-    Record read_record(int block_num);
+    RecordList read_record(const std::vector<DB::Type::Pos> &pos_lst)const;
 
-    // getter setter
-    const std::string &get_table_name() const;
-    void set_table_name(const std::string &table_name);
-    size_t get_block_size() const;
-    void set_block_size(size_t block_size);
+    // write
+    void write_record(const RecordList &record, DB::Type::Pos pos);
 
 private:
-    std::string table_name;
-    size_t block_size;
+    TableProperty property;
 };
 
-#endif //DBIO_H
+#endif

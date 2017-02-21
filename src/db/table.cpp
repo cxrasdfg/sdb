@@ -41,33 +41,33 @@ RecordList Table::read_record(const std::vector<Pos> &pos_lst)const{
     size_t record_size = property.get_record_size();
     RecordList record_lst(property);
     for (auto &&item: block_offsets_map) {
-        std::string data_block = io.read_block(item.first);
+        DB::Type::Bytes data_block = io.read_block(item.first);
         for (auto &&offset : item.second) {
-            std::string record_tuple(data_block, offset, record_size);
+            auto beg = data_block.data()+offset;
+            DB::Type::Bytes record_tuple(beg, beg+record_size);
             record_lst.record_tuple_lst.push_back(record_tuple);
         }
     }
     return record_lst;
 }
 
-void Table::write_record(const RecordList &record_lst,
+void Table::write_record(const DB::Type::BytesList &tuple_lst,
                          const std::vector<Pos> &pos_lst) {
-    if (record_lst.record_tuple_lst.size() != pos_lst.size()) {
+    if (tuple_lst.size() != pos_lst.size()) {
         throw std::runtime_error("Error: Table::write_record: "
                                          "record_lst and pos_lst length not equal.");
     }
-    std::map<size_t, std::vector<std::pair<Pos, std::string>>> block_offsets_map;
+    std::map<size_t, std::vector<std::pair<Pos, DB::Type::Bytes>>> block_offsets_map;
     for (size_t i = 0; i < pos_lst.size(); ++i) {
         size_t block_num = pos_lst[i] / BLOCK_SIZE;
         Pos offset =  pos_lst[i] % BLOCK_SIZE;
-        block_offsets_map[block_num].push_back(std::make_pair(offset, record_lst.record_tuple_lst[i]));
+        block_offsets_map[block_num].push_back(std::make_pair(offset, tuple_lst[i]));
     }
     IO io(get_file_abs_path(false));
-    size_t record_size = property.get_record_size();
     for (auto &&item : block_offsets_map) {
-        char *block_buffer = const_cast<char*>(io.read_block(item.first).c_str());
+        DB::Type::Bytes block_buffer = io.read_block(item.first);
         for (auto &&second : item.second) {
-            second.second.copy(block_buffer+second.first, second.second.size());
+            std::copy(second.second.begin(), second.second.end(), block_buffer.data()+second.first);
         }
         io.write_block(block_buffer, item.first);
     }

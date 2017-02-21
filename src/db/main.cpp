@@ -26,21 +26,20 @@ int main(void) {
     RecordList recordList(tableProperty);
     std::vector<size_t > pos;
     for (size_t i = 0; i < 10; ++i) {
-        char tuple[20];
+        DB::Type::Bytes tuple(12);
         std::string str = "It is OK";
-        std::memcpy(tuple, &i, 4);
-        std::memcpy(tuple+4, str.c_str(), 8);
-        std::string string(tuple, 12);
-        recordList.record_tuple_lst.push_back(string);
+        std::memcpy(tuple.data(), &i, 4);
+        std::memcpy(tuple.data()+4, str.c_str(), 8);
+        recordList.record_tuple_lst.push_back(tuple);
         pos.push_back(i*12);
     }
-    table.write_record(recordList, pos);
+    table.write_record(recordList.record_tuple_lst, pos);
     RecordList lst(table.read_record(pos));
     for (auto &&item : lst.record_tuple_lst) {
         int num;
         char buffer[9];
-        std::memcpy(&num, item.c_str(), 4);
-        std::memcpy(buffer, item.c_str()+4, 8);
+        std::memcpy(&num, item.data(), 4);
+        std::memcpy(buffer, item.data()+4, 8);
         buffer[8] = '\0';
         cout << "num:" << num << endl;
         cout << "str:" << buffer << endl;

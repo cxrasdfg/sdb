@@ -5,6 +5,7 @@
 #include <string>
 
 #include "table_property.h"
+#include "util.h"
 
 class RecordList {
 public:
@@ -12,7 +13,7 @@ public:
     RecordList(const TableProperty &property):property(property){}
 
 public:
-    std::vector<std::string> record_tuple_lst;
+    DB::Type::BytesList record_tuple_lst;
 
 private:
     TableProperty property;

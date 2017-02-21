@@ -6,6 +6,7 @@
 #define UTIL_H
 
 #include <stdexcept>
+#include <vector>
 
 namespace DB {
     namespace Enum {
@@ -38,7 +39,9 @@ namespace DB {
 
     namespace Type {
         using Pos = size_t;
-        using Byte = unsigned char ;
+        using Byte = char ;
+        using Bytes = std::vector<Byte> ;
+        using BytesList = std::vector<Bytes>;
     }
 
 }

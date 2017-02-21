@@ -2,8 +2,8 @@
 // Created by sven on 17-2-20.
 //
 
-#ifndef METATABLE_H
-#define METATABLE_H
+#ifndef TABLE_PROPERTY_H
+#define TABLE_PROPERTY_H
 
 #include <string>
 #include <map>
@@ -22,4 +22,4 @@ struct TableProperty {
 };
 
 
-#endif //METATABLE_H
+#endif // TABLE_PROPERTY_H

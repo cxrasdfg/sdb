@@ -6,14 +6,15 @@
 #define IO_H
 
 #include <string>
+#include "util.h"
 
 class IO {
 public:
     IO()= delete;
     IO(const std::string &file):file_path(file){}
 
-    std::string read_block(size_t block_num);
-    void write_block(const char *data, size_t block_num);
+    DB::Type::Bytes read_block(size_t block_num);
+    void write_block(const DB::Type::Bytes &data, size_t block_num);
 
 private:
     std::string file_path;

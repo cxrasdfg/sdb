@@ -24,7 +24,7 @@ public:
     RecordList read_record(const std::vector<DB::Type::Pos> &pos_lst)const;
 
     // write
-    void write_record(const RecordList &record_lst,
+    void write_record(const DB::Type::BytesList &tuple_lst,
                       const std::vector<DB::Type::Pos> &pos_lst);
 
 private:

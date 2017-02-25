@@ -6,19 +6,21 @@
 
 #include "util.h"
 
-class RecordList {
+class Record {
 public:
-    RecordList()= delete;
-    RecordList(const DB::Type::TableProperty &property):property(property){}
+    Record()= delete;
+    Record(const DB::Type::TableProperty &property):property(property){
+        read_free_pos();
+    }
 
     // record
-    void read_record(const DB::Type::PosList &pos_lst);
-    DB::Type::PosList write_record();
+    DB::Type::BytesList read_record(const DB::Type::PosList &pos_lst);
+    DB::Type::Pos insert_record(const DB::Type::Bytes &data);
+    void remove_record(DB::Type::Pos pos);
 
+private:
     void read_free_pos();
 
-public:
-    DB::Type::BytesList record_tuple_lst;
 private:
     std::vector<DB::Type::Pos> free_pos_lst;
     DB::Type::Pos free_end_pos;

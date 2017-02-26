@@ -9,70 +9,51 @@
 
 #include "table.h"
 #include "util.h"
-#include "table_property.h"
+#include "bpTree.h"
 
 using std::cout;
 using std::endl;
+using DB::Type::Bytes;
+using DB::Type::Pos;
+using DB::Const::BLOCK_SIZE;
 
+DB::Type::TableProperty get_table_property();
+void table_init();
+void bpt_test();
 
 int main(void) {
     clock_t start = clock();
-    std::map<std::string, std::pair<char, size_t >> map{
-            {"col_1", std::make_pair(DB::Enum::INT, 4)},
-            {"col_2", std::make_pair(DB::Enum::VARCHAR, 8)}
-    };
-    TableProperty tableProperty("test", map);
-    Table table(tableProperty);
-    RecordList recordList(tableProperty);
-    std::vector<size_t > pos;
-    for (size_t i = 0; i < 10; ++i) {
-        DB::Type::Bytes tuple(12);
-        std::string str = "It is OK";
-        std::memcpy(tuple.data(), &i, 4);
-        std::memcpy(tuple.data()+4, str.c_str(), 8);
-        recordList.record_tuple_lst.push_back(tuple);
-        pos.push_back(i*12);
-    }
-    table.write_record(recordList.record_tuple_lst, pos);
-    RecordList lst(table.read_record(pos));
-    for (auto &&item : lst.record_tuple_lst) {
-        int num;
-        char buffer[9];
-        std::memcpy(&num, item.data(), 4);
-        std::memcpy(buffer, item.data()+4, 8);
-        buffer[8] = '\0';
-        cout << "num:" << num << endl;
-        cout << "str:" << buffer << endl;
-    }
-
+//    table_init();
+    bpt_test();
     std::cout << "time:" << (double)((clock()-start))/CLOCKS_PER_SEC << std::endl;
     return 0;
 }
 
-std::vector<std::string> get_test_block_data(){
-    std::vector<std::string> data;
-    std::string str;
-    str += 7;
-    str += "table_1";
-    str += 3;
-    str += "t_2";
-    str += 5;
-    str += "table";
-    data.push_back(str);
-    str.clear();
-    str += 1;
-    str += 2;
-    str += 3;
-    data.push_back(str);
-    str.clear();
-    str += "1234a33.3";
-    data.push_back(str);
-    str.clear();
-    str += "1234a33.3";
-    data.push_back(str);
-    str.clear();
-    str += "1234a33.3";
-    data.push_back(str);
-    str.clear();
-    return data;
+DB::Type::TableProperty get_table_property(){
+    std::map<std::string, std::pair<char, size_t >> map{
+            {"col_1", std::make_pair(DB::Enum::INT, 4)},
+            {"col_2", std::make_pair(DB::Enum::VARCHAR, 8)}
+    };
+    DB::Type::TableProperty tableProperty("test", "col_1", map);
+    return tableProperty;
+}
+
+void table_init(){
+    auto dir = DB::Function::get_db_file_dir_path();
+    cout << dir << endl;
+    // index_free.sdb
+    IO io(dir+"/"+"test_index.sdb");
+    Bytes bytes = io.read_block(0);
+    Pos root_pos = 0;
+    Pos end_pos = 0;
+    size_t free_pos_count = 0;
+    size_t Pos_len = sizeof(Pos);
+    std::memcpy(bytes.data(), &root_pos, Pos_len);
+    std::memcpy(bytes.data()+8, &free_pos_count, 8);
+    std::memcpy(bytes.data()+16, &end_pos, 8);
+    io.write_block(bytes, 0);
+}
+
+void bpt_test() {
+    BpTree<int, DB::Type::Bytes> bpTree(get_table_property());
 }

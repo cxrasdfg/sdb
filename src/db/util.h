@@ -29,7 +29,6 @@ namespace DB {
 
     namespace Const {
         const size_t BLOCK_SIZE = 100;
-        const std::string DB_FILE_DIR_PATH = DB::Function::get_db_file_dir_path();
     }
 
     namespace Function {

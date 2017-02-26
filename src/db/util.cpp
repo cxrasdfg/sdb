@@ -22,7 +22,7 @@ namespace DB {
         }
 
         std::string TableProperty::get_file_abs_path(char file_suffix) const {
-            std::string file_path = DB::Const::DB_FILE_DIR_PATH;
+            std::string file_path = DB::Function::get_db_file_dir_path();
             file_path += '/' + table_name;
             if (file_suffix == DB::Enum::INDEX_SUFFIX) {
                 file_path += "_index.sdb";

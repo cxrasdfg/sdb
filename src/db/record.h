@@ -12,6 +12,9 @@ public:
     Record(const DB::Type::TableProperty &property):property(property){
         read_free_pos();
     }
+    ~Record(){
+        write_free_pos();
+    }
 
     // record
     DB::Type::BytesList read_record(const DB::Type::PosList &pos_lst);
@@ -20,6 +23,7 @@ public:
 
 private:
     void read_free_pos();
+    void write_free_pos();
 
 private:
     std::vector<DB::Type::Pos> free_pos_lst;

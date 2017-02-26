@@ -36,6 +36,7 @@ DB::Type::Pos Record::insert_record(const DB::Type::Bytes &data) {
     Pos pos;
     if (free_pos_lst.empty()) {
         pos = free_end_pos;
+        free_end_pos += sizeof(property.get_record_size());
     } else {
         pos = free_pos_lst.back();
         free_pos_lst.pop_back();
@@ -71,6 +72,19 @@ void Record::read_free_pos() {
         std::memcpy(&pos, beg+(pos_len*i), pos_len);
         free_pos_lst.push_back(pos);
     }
-    free_end_pos = free_pos_lst.back();
-    free_pos_lst.pop_back();
+    std::memcpy(&free_end_pos, beg+(pos_count*pos_len), pos_len);
+}
+
+void Record::write_free_pos() {
+    DB::Type::Bytes bytes(BLOCK_SIZE);
+    size_t free_pos_lst_len = free_pos_lst.size();
+    std::memcpy(bytes.data(), &free_pos_lst_len, sizeof(size_t));
+    auto beg = bytes.data()+sizeof(size_t);
+    size_t Pos_len = sizeof(Pos);
+    for (size_t i = 0; i < free_pos_lst_len; ++i) {
+        std::memcpy(beg+(i*Pos_len), &free_pos_lst[i], Pos_len);
+    }
+    std::memcpy(beg+(Pos_len*free_pos_lst_len), &free_end_pos, Pos_len);
+    IO io(property.get_file_abs_path(DB::Enum::POS_SUFFIX));
+    io.write_block(bytes, 0);
 }

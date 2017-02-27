@@ -36,7 +36,7 @@ DB::Type::Pos Record::insert_record(const DB::Type::Bytes &data) {
     Pos pos;
     if (free_pos_lst.empty()) {
         pos = free_end_pos;
-        free_end_pos += sizeof(property.get_record_size());
+        free_end_pos += property.get_record_size();
     } else {
         pos = free_pos_lst.back();
         free_pos_lst.pop_back();

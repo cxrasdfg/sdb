@@ -312,11 +312,9 @@ void BpTree<KeyType, DataType>::print()const{
         bool is_leaf = ptr->is_leaf;
         std::cout << "[ ";
         for (auto iter = ptr->pos_lst.begin(); iter != ptr->pos_lst.end(); iter++){
-            std::cout << iter->second << ":";
             if (is_leaf){
-                std::cout << iter->first << " ";
+                std::cout << iter->first << ":" << iter->second << " ";
 //                std::cout << iter->first << ":";
-//                std::cout << *(ptr->get_data_ptr(iter->second)) << " ";
             } else {
                 std::cout << iter->first << " ";
                 auto node = read(iter->second);

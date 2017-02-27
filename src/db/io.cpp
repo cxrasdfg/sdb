@@ -26,7 +26,7 @@ void IO::write_block(const DB::Type::Bytes &data, size_t block_num){
             std::string("Error: open file error:")+file_path
         );
     }
-    if (get_file_size() < (block_num*BLOCK_SIZE)) {
+    if (get_file_size() < (block_num+1)*BLOCK_SIZE) {
         lseek(fd, BLOCK_SIZE*(1+block_num), SEEK_SET);
         write(fd, "", 1);
     }
@@ -42,6 +42,10 @@ DB::Type::Bytes IO::read_block(size_t block_num) {
         throw std::runtime_error(
             std::string("Error: open file error:")+file_path
         );
+    }
+    if (get_file_size() < (block_num+1)*BLOCK_SIZE) {
+        lseek(fd, BLOCK_SIZE*(1+block_num), SEEK_SET);
+        write(fd, "", 1);
     }
     char *buff = (char*)mmap(nullptr, BLOCK_SIZE, PROT_READ, MAP_SHARED, fd, BLOCK_SIZE*block_num);
     Bytes bytes(buff, buff+BLOCK_SIZE);

@@ -39,9 +39,9 @@ void io_test();
 
 int main(void) {
     clock_t start = clock();
-    //table_init();
-    //bpt_test();
-    io_test();
+    table_init();
+    bpt_test();
+//    io_test();
     std::cout << "time:" << (double)((clock()-start))/CLOCKS_PER_SEC << std::endl;
     return 0;
 }
@@ -90,15 +90,9 @@ void bpt_test() {
     int key = 1;
     std::memcpy(bytes.data(), &key, 4);
     std::memcpy(bytes.data()+4, std::string("fffffffff").data(), 8);
-    bpTree.insert(1, bytes);
-    bpTree.insert(10, bytes);
-    bpTree.insert(2, bytes);
-    bpTree.insert(5, bytes);
-    bpTree.insert(7, bytes);
-    bpTree.insert(6, bytes);
-//    bpTree.insert(9, bytes);
-    bpTree.insert(11, bytes);
-//    bpTree.insert(3, bytes);
+    for (int j = 0; j < 1000; ++j) {
+        bpTree.insert(j, bytes);
+    }
     bpTree.print();
 }
 

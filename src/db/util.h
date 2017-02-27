@@ -4,12 +4,12 @@
 
 #ifndef UTIL_H
 #define UTIL_H
-
 #include <stdexcept>
 #include <vector>
 #include <cstring>
 #include <string>
 #include <map>
+
 
 namespace DB {
     namespace Enum {
@@ -28,7 +28,8 @@ namespace DB {
     }
 
     namespace Const {
-        const size_t BLOCK_SIZE = 100;
+        #include <unistd.h>
+        const size_t BLOCK_SIZE = size_t(getpagesize());
     }
 
     namespace Function {

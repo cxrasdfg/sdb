@@ -20,11 +20,28 @@ using DB::Const::BLOCK_SIZE;
 DB::Type::TableProperty get_table_property();
 void table_init();
 void bpt_test();
+void io_test();
+//template <typename T>
+//DB::Type::Bytes make_tuple(const T &t){
+//    DB::Type::Bytes tuple(sizeof(t));
+//    std::memcpy(tuple.data(), &t, sizeof(t));
+//    return tuple;
+//}
+//
+//template <typename T, typename ...Args>
+//DB::Type::Bytes make_tuple(const T &t, const Args& ...args){
+//    DB::Type::Bytes tuple(sizeof(t));
+//    std::memcpy(tuple.data(), &t, sizeof(t));
+//    DB::Type::Bytes bytes = make_tuple(args...);
+//    tuple.insert(tuple.end(), bytes.begin(), bytes.end());
+//    return tuple;
+//}
 
 int main(void) {
     clock_t start = clock();
-//    table_init();
-    bpt_test();
+    //table_init();
+    //bpt_test();
+    io_test();
     std::cout << "time:" << (double)((clock()-start))/CLOCKS_PER_SEC << std::endl;
     return 0;
 }
@@ -45,15 +62,54 @@ void table_init(){
     IO io(dir+"/"+"test_index.sdb");
     Bytes bytes = io.read_block(0);
     Pos root_pos = 0;
-    Pos end_pos = 0;
+    Pos end_pos = BLOCK_SIZE;
     size_t free_pos_count = 0;
     size_t Pos_len = sizeof(Pos);
+    size_t size_len = sizeof(size_t);
     std::memcpy(bytes.data(), &root_pos, Pos_len);
-    std::memcpy(bytes.data()+8, &free_pos_count, 8);
-    std::memcpy(bytes.data()+16, &end_pos, 8);
+    std::memcpy(bytes.data()+size_len, &free_pos_count, size_len);
+    std::memcpy(bytes.data()+size_len+size_len, &end_pos, size_len);
     io.write_block(bytes, 0);
+
+    // test_pos
+    IO record_io(dir+"/"+"test_pos.sdb");
+    Bytes record_bytes = io.read_block(0);
+    size_t record_free_pos_count = 0;
+    size_t record_free_end_pos = 0;
+    std::memcpy(&record_free_pos_count, record_bytes.data(), size_len);
+    std::memcpy(&record_free_end_pos, record_bytes.data()+size_len, size_len);
+    record_io.write_block(record_bytes, 0);
 }
 
 void bpt_test() {
     BpTree<int, DB::Type::Bytes> bpTree(get_table_property());
+    Bytes bytes(12);
+//    for (int j = 0; j < 10; ++j) {
+//
+//    }
+    int key = 1;
+    std::memcpy(bytes.data(), &key, 4);
+    std::memcpy(bytes.data()+4, std::string("fffffffff").data(), 8);
+    bpTree.insert(1, bytes);
+    bpTree.insert(10, bytes);
+    bpTree.insert(2, bytes);
+    bpTree.insert(5, bytes);
+    bpTree.insert(7, bytes);
+    bpTree.insert(6, bytes);
+//    bpTree.insert(9, bytes);
+    bpTree.insert(11, bytes);
+//    bpTree.insert(3, bytes);
+    bpTree.print();
+}
+
+void io_test(){
+    auto dir = DB::Function::get_db_file_dir_path();
+    IO io(dir+"/"+"test_pos.sdb");
+    Bytes bytes(BLOCK_SIZE);
+    for (int i = 0; i < 100; ++i) {
+        bytes[i] = 'a';
+    }
+    io.write_block(bytes, 3);
+    bytes = io.read_block(1);
+    std::cout << bytes.data() << std::endl;
 }

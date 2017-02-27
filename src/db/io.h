@@ -15,6 +15,7 @@ public:
 
     DB::Type::Bytes read_block(size_t block_num);
     void write_block(const DB::Type::Bytes &data, size_t block_num);
+    size_t get_file_size()const;
 
 private:
     std::string file_path;

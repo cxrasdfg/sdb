@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iterator>
 #include <functional>
+#include <stdexcept>
 
 #include "lexer.h"
 #include "ast.h"
@@ -428,8 +429,7 @@ nodePtrVecType Parser::predicate_or_dot_processing(){
 
 // ========== error processing =========
 void Parser::print_error(std::string str){
-    std::cout << "Error:" << str << std::endl;
-    exit(1);
+    throw std::runtime_error(std::string("Error: ")+str);
 }
 
 // ========== debug processing =========

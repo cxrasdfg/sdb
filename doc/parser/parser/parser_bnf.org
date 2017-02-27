@@ -1,3 +1,4 @@
+#+BEGIN_EXAMPLE
 bnf
 input
 input -> statement_list
@@ -53,3 +54,4 @@ column_contrains -> "primary key" '(' column_name_list ')'
 alter_table
 
 drop_table
+#+END_EXAMPLE

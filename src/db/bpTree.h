@@ -380,8 +380,8 @@ DataType BpTree<KeyType, DataType>::find_r(const KeyType &key, nodePtrType ptr) 
         if (key == x.first && is_leaf){
             Record record(table_property);
             PosList pos_lst;
-            pos_lst.push_back(ptr->file_pos);
-            record.read_record(pos_lst)[0];
+            pos_lst.push_back(x.second);
+            return record.read_record(pos_lst)[0];
         } else if (!is_leaf && key <= x.first){
             return find_r(key, read(x.second));
         } else if (key < x.first && is_leaf) {

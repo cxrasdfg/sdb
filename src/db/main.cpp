@@ -93,6 +93,12 @@ void bpt_test() {
     for (int j = 0; j < 1000; ++j) {
         bpTree.insert(j, bytes);
     }
+    Bytes ret_buff = bpTree.find(500);
+    int x;
+    Bytes read_buff(8);
+    std::memcpy(&x, ret_buff.data(), sizeof(int));
+    std::memcpy(read_buff.data(), ret_buff.data()+sizeof(int), 8);
+    cout << "x:" << x << "ret:" << read_buff.data() << endl;
     bpTree.print();
 }
 

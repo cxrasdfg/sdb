@@ -206,9 +206,11 @@ void BpTree<KeyType, DataType>::remove(const KeyType &key){
         throw_error("Error: B+ Tree is empty");
     }
     remove_r(key, root);
-    if (root->pos_lst.size() == 1){
-        free_pos_list.push_back(root->pos_lst.begin()->second);
-        root = read(root->pos_lst.begin()->second);
+    if (!root->is_leaf && root->pos_lst.size() == 1){
+        root_pos = read(root->pos_lst.begin()->second)->file_pos;
+        free_pos_list.push_back(root->file_pos);
+    } else if (root->pos_lst.size() == 0) {
+        root_pos = 0;
     }
 }
 
@@ -298,6 +300,9 @@ void BpTree<KeyType, DataType>::write(nodePtrType ptr) {
 template <typename KeyType, typename DataType>
 void BpTree<KeyType, DataType>::print()const{
     nodePtrType root_node = read(root_pos);
+    if (root_node == nullptr) {
+        return;
+    }
     std::list<nodePtrType> deq;
     deq.push_back(root_node);
     size_t sub_count = 1;
@@ -359,7 +364,8 @@ bool BpTree<KeyType, DataType>::node_merge(nodePtrType &ptr_1, nodePtrType &ptr_
         write(ptr_2);
         return false;
     } else {
-        ptr_1 = ptr_2;
+        ptr_1->pos_lst = std::move(ptr_2->pos_lst);
+        ptr_1->end_pos = ptr_2->end_pos;
         write(ptr_1);
         free_pos_list.push_back(ptr_2->file_pos);
         ptr_2 = nullptr;
@@ -446,6 +452,9 @@ bool BpTree<KeyType, DataType>::remove_r(const KeyType &key, nodePtrType &ptr) {
         if (is_leaf) {
             if (key == iter->first) {
                 Record record(table_property);
+                if (key == 510) {
+                    std::cout << " " << std::endl;
+                }
                 record.remove_record(iter->second);
                 ptr->pos_lst.erase(iter);
                 is_for_end = false;

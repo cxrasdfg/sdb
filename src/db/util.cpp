@@ -1,4 +1,5 @@
 #include <boost/filesystem.hpp>
+#include <iostream>
 #include "util.h"
 
 namespace DB {

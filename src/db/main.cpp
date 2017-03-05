@@ -25,9 +25,9 @@ void io_test();
 
 int main(void) {
     clock_t start = clock();
-//    table_init();
-//    bpt_test();
-    io_test();
+    table_init();
+    bpt_test();
+//    io_test();
     std::cout << "time:" << (double)((clock()-start))/CLOCKS_PER_SEC << std::endl;
     return 0;
 }
@@ -76,18 +76,18 @@ void bpt_test() {
     int key = 1;
     std::memcpy(bytes.data(), &key, 4);
     std::memcpy(bytes.data()+4, std::string("fffffffff").data(), 8);
-    for (int j = 0; j < 500; j += 2) {
+    for (int j = 0; j < 1000; j += 2) {
         bpTree.insert(j, bytes);
     }
-    for (int j = 1; j < 500; j += 2) {
+    for (int j = 1; j < 1000; j += 2) {
         bpTree.insert(j, bytes);
     }
     bpTree.print();
-    for (int j = 0; j < 500; j += 2) {
+    for (int j = 0; j < 1000; j += 2) {
         bpTree.remove(j);
     }
     bpTree.print();
-    for (int j = 1; j < 500; j += 2) {
+    for (int j = 1; j < 1000; j += 2) {
         bpTree.remove(j);
     }
     bpTree.print();
@@ -112,8 +112,5 @@ void io_test(){
     }
     file_io.write_file(bytes);
     bytes = file_io.read_file();
-    for (auto &&item : bytes) {
-        cout << item;
-    }
-    cout << endl;
+    DB::Function::bytes_print(bytes);
 }

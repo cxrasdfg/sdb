@@ -8,6 +8,7 @@
 #include <vector>
 #include <cstring>
 #include <string>
+#include <iostream>
 #include <map>
 
 
@@ -76,6 +77,15 @@ namespace DB {
             std::string get_file_abs_path(char file_suffix)const;
             size_t get_record_size()const;
         };
+    }
+
+    namespace Function {
+        inline void bytes_print(const DB::Type::Bytes &bytes) {
+            for (auto &&item : bytes) {
+                std::cout << item;
+            }
+            std::cout << std::endl;
+        }
     }
 
 }

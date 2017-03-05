@@ -53,7 +53,7 @@ DB::Type::Pos Record::insert_record(const DB::Type::Bytes &data) {
 void Record::remove_record(DB::Type::Pos pos) {
     if (pos > free_end_pos) {
         throw std::runtime_error(
-                std::string("Error: pos error:") + std::to_string(pos)
+                std::string("Error: Record pos error:") + std::to_string(pos)
         );
     }
     free_pos_lst.push_back(pos);
@@ -62,7 +62,7 @@ void Record::remove_record(DB::Type::Pos pos) {
 
 void Record::read_free_pos() {
     IO io(property.get_file_abs_path(DB::Enum::POS_SUFFIX));
-    DB::Type::Bytes block_data = io.read_block(0);
+    DB::Type::Bytes block_data = io.read_file();
     size_t pos_count;
     size_t pos_len = sizeof(pos_count);
     std::memcpy(&pos_count, block_data.data(), pos_len);
@@ -76,15 +76,16 @@ void Record::read_free_pos() {
 }
 
 void Record::write_free_pos() {
-    DB::Type::Bytes bytes(BLOCK_SIZE);
-    size_t free_pos_lst_len = free_pos_lst.size();
-    std::memcpy(bytes.data(), &free_pos_lst_len, sizeof(size_t));
-    auto beg = bytes.data()+sizeof(size_t);
+    size_t size_len = sizeof(size_t);
     size_t Pos_len = sizeof(Pos);
+    DB::Type::Bytes bytes(size_len*2+free_pos_lst.size()*Pos_len);
+    size_t free_pos_lst_len = free_pos_lst.size();
+    std::memcpy(bytes.data(), &free_pos_lst_len, size_len);
+    auto beg = bytes.data()+sizeof(size_t);
     for (size_t i = 0; i < free_pos_lst_len; ++i) {
         std::memcpy(beg+(i*Pos_len), &free_pos_lst[i], Pos_len);
     }
     std::memcpy(beg+(Pos_len*free_pos_lst_len), &free_end_pos, Pos_len);
     IO io(property.get_file_abs_path(DB::Enum::POS_SUFFIX));
-    io.write_block(bytes, 0);
+    io.write_file(bytes);
 }

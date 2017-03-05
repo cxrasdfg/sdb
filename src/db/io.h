@@ -15,6 +15,8 @@ public:
 
     DB::Type::Bytes read_block(size_t block_num);
     void write_block(const DB::Type::Bytes &data, size_t block_num);
+    DB::Type::Bytes read_file();
+    void write_file(const DB::Type::Bytes &data);
     size_t get_file_size()const;
 
 private:

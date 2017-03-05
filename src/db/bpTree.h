@@ -189,6 +189,7 @@ void BpTree<KeyType, DataType>::insert(const KeyType &key, const DataType &data)
     }
     nodePtrType left_ptr = insert_r(key, data, root);
     if (left_ptr){
+        write(left_ptr);
         auto new_root = std::make_shared<nodeType>();
         new_root->pos_lst.push_back(std::make_pair(left_ptr->last_key(), left_ptr->file_pos));
         new_root->pos_lst.push_back(std::make_pair(root->last_key(), root->file_pos));
@@ -344,7 +345,6 @@ BpTree<KeyType, DataType>::node_split(nodePtrType &ptr) {
     }
     left_node_ptr->is_leaf = ptr->is_leaf;
     write(ptr);
-    write(left_node_ptr);
     return left_node_ptr;
 }
 
@@ -352,7 +352,9 @@ template <typename KeyType, typename DataType>
 bool BpTree<KeyType, DataType>::node_merge(nodePtrType &ptr_1, nodePtrType &ptr_2) {
     ptr_2->pos_lst.splice(ptr_2->pos_lst.begin(), ptr_1->pos_lst);
     if (ptr_2->pos_lst.size() > node_key_count){
-        ptr_1 = node_split(ptr_2);
+        auto left_ptr = node_split(ptr_2);
+        left_ptr->file_pos = ptr_1->file_pos;
+        ptr_1 = left_ptr;
         write(ptr_1);
         write(ptr_2);
         return false;
@@ -408,6 +410,7 @@ BpTree<KeyType, DataType>::insert_r(const KeyType &key, const DataType &data, no
                 auto node = read(iter->second);
                 auto left_ptr = insert_r(key, data, node);
                 if (left_ptr){
+                    write(left_ptr);
                     ptr->pos_lst.insert(iter, std::make_pair(left_ptr->last_key(), left_ptr->file_pos));
                 }
             }
@@ -425,6 +428,7 @@ BpTree<KeyType, DataType>::insert_r(const KeyType &key, const DataType &data, no
             auto node = read(lst_end_ptr->second);
             auto left_ptr = insert_r(key, data, node);
             if (left_ptr){
+                write(left_ptr);
                 ptr->pos_lst.insert(lst_end_ptr, std::make_pair(left_ptr->last_key(), left_ptr->file_pos));
             }
             lst_end_ptr->first = key;
@@ -441,7 +445,8 @@ bool BpTree<KeyType, DataType>::remove_r(const KeyType &key, nodePtrType &ptr) {
     for (auto iter = ptr->pos_lst.begin(); iter != ptr->pos_lst.end(); iter++){
         if (is_leaf) {
             if (key == iter->first) {
-                free_pos_list.push_back(iter->second);
+                Record record(table_property);
+                record.remove_record(iter->second);
                 ptr->pos_lst.erase(iter);
                 is_for_end = false;
                 break;
@@ -462,9 +467,11 @@ bool BpTree<KeyType, DataType>::remove_r(const KeyType &key, nodePtrType &ptr) {
                     iter_prev->first = read(iter_prev->second)->last_key();
                 } else {
                     auto iter_next = std::next(iter);
-                    nodePtrType next_ptr = read(iter->second);
+                    nodePtrType next_ptr = read(iter_next->second);
                     is_one = node_merge(iter_sec_ptr, next_ptr);
-                    if (is_one) ptr->pos_lst.erase(iter_next);
+                    if (is_one) {
+                        ptr->pos_lst.erase(iter_next);
+                    }
                     iter->first = iter_sec_ptr->last_key();
                 }
             }

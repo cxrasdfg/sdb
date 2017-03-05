@@ -7,6 +7,7 @@
 #include <sys/mman.h>
 #include <ctime>
 
+
 #include "table.h"
 #include "util.h"
 #include "bpTree.h"
@@ -21,27 +22,12 @@ DB::Type::TableProperty get_table_property();
 void table_init();
 void bpt_test();
 void io_test();
-//template <typename T>
-//DB::Type::Bytes make_tuple(const T &t){
-//    DB::Type::Bytes tuple(sizeof(t));
-//    std::memcpy(tuple.data(), &t, sizeof(t));
-//    return tuple;
-//}
-//
-//template <typename T, typename ...Args>
-//DB::Type::Bytes make_tuple(const T &t, const Args& ...args){
-//    DB::Type::Bytes tuple(sizeof(t));
-//    std::memcpy(tuple.data(), &t, sizeof(t));
-//    DB::Type::Bytes bytes = make_tuple(args...);
-//    tuple.insert(tuple.end(), bytes.begin(), bytes.end());
-//    return tuple;
-//}
 
 int main(void) {
     clock_t start = clock();
-    table_init();
-    bpt_test();
-//    io_test();
+//    table_init();
+//    bpt_test();
+    io_test();
     std::cout << "time:" << (double)((clock()-start))/CLOCKS_PER_SEC << std::endl;
     return 0;
 }
@@ -90,26 +76,44 @@ void bpt_test() {
     int key = 1;
     std::memcpy(bytes.data(), &key, 4);
     std::memcpy(bytes.data()+4, std::string("fffffffff").data(), 8);
-    for (int j = 0; j < 1000; ++j) {
+    for (int j = 0; j < 500; j += 2) {
         bpTree.insert(j, bytes);
     }
-    Bytes ret_buff = bpTree.find(500);
-    int x;
-    Bytes read_buff(8);
-    std::memcpy(&x, ret_buff.data(), sizeof(int));
-    std::memcpy(read_buff.data(), ret_buff.data()+sizeof(int), 8);
-    cout << "x:" << x << "ret:" << read_buff.data() << endl;
+    for (int j = 1; j < 500; j += 2) {
+        bpTree.insert(j, bytes);
+    }
+    bpTree.print();
+    for (int j = 0; j < 500; j += 2) {
+        bpTree.remove(j);
+    }
+    bpTree.print();
+    for (int j = 1; j < 500; j += 2) {
+        bpTree.remove(j);
+    }
     bpTree.print();
 }
 
 void io_test(){
+    // test read/write block
     auto dir = DB::Function::get_db_file_dir_path();
-    IO io(dir+"/"+"test_pos.sdb");
+    IO block_io(dir+"/"+"test_pos.sdb");
     Bytes bytes(BLOCK_SIZE);
     for (int i = 0; i < 100; ++i) {
         bytes[i] = 'a';
     }
-    io.write_block(bytes, 3);
-    bytes = io.read_block(1);
+    block_io.write_block(bytes, 0);
+    bytes = block_io.read_block(0);
     std::cout << bytes.data() << std::endl;
+    // test read/write file
+    IO file_io(dir+"/"+"test_pos.sdb");
+    bytes.clear();
+    for (char j = 'a'; j < 'z'; ++j) {
+        bytes.push_back(j);
+    }
+    file_io.write_file(bytes);
+    bytes = file_io.read_file();
+    for (auto &&item : bytes) {
+        cout << item;
+    }
+    cout << endl;
 }

@@ -54,6 +54,29 @@ DB::Type::Bytes IO::read_block(size_t block_num) {
     return bytes;
 }
 
+DB::Type::Bytes IO::read_file() {
+    std::ifstream in(file_path, std::ios::binary);
+    if (!in.is_open()) {
+        throw std::runtime_error(
+                std::string("Error: read file [")+file_path+"] error!"
+        );
+    }
+    size_t file_size = get_file_size();
+    Bytes buffer_data(file_size);
+    in.read(buffer_data.data(), file_size);
+    return buffer_data;
+}
+
+void IO::write_file(const DB::Type::Bytes &data) {
+    std::ofstream out(file_path, std::ios::binary);
+    if (!out.is_open()) {
+        throw std::runtime_error(
+                std::string("Error: write file [")+file_path+"] error!"
+        );
+    }
+    out.write(data.data(), data.size());
+}
+
 size_t IO::get_file_size() const {
     struct stat file_info;
     stat(file_path.data(), &file_info);

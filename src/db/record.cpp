@@ -2,6 +2,7 @@
 #include "io.h"
 #include "util.h"
 #include <map>
+#include <functional>
 
 using DB::Type::Pos;
 using DB::Type::Bytes ;
@@ -15,7 +16,7 @@ DB::Type::BytesList Record::read_record(const DB::Type::PosList &pos_lst) {
         Pos offset = item % BLOCK_SIZE;
         block_offsets_map[block_num].push_back(offset);
     }
-    IO io(property.get_file_abs_path(DB::Enum::RECORD_SUFFIX));
+    IO io(property.table_name+"_record.sdb");
     size_t record_size = property.get_record_size();
     BytesList bytes_list;
     for (auto &&item: block_offsets_map) {
@@ -43,7 +44,7 @@ DB::Type::Pos Record::insert_record(const DB::Type::Bytes &data) {
     }
     size_t block_num = pos / BLOCK_SIZE;
     Pos offset =  pos % BLOCK_SIZE;
-    IO io(property.get_file_abs_path(DB::Enum::RECORD_SUFFIX));
+    IO io(property.table_name+"_record.sdb");
     Bytes block_data = io.read_block(block_num);
     std::memcpy(block_data.data()+offset, data.data(), data.size());
     io.write_block(block_data, block_num);
@@ -61,7 +62,7 @@ void Record::remove_record(DB::Type::Pos pos) {
 
 
 void Record::read_free_pos() {
-    IO io(property.get_file_abs_path(DB::Enum::POS_SUFFIX));
+    IO io(property.table_name+"_meta_record.sdb");
     DB::Type::Bytes block_data = io.read_file();
     size_t pos_count;
     size_t pos_len = sizeof(pos_count);
@@ -86,6 +87,6 @@ void Record::write_free_pos() {
         std::memcpy(beg+(i*Pos_len), &free_pos_lst[i], Pos_len);
     }
     std::memcpy(beg+(Pos_len*free_pos_lst_len), &free_end_pos, Pos_len);
-    IO io(property.get_file_abs_path(DB::Enum::POS_SUFFIX));
+    IO io(property.table_name+"_meta_record.sdb");
     io.write_file(bytes);
 }

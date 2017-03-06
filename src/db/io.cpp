@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
+#include <boost/filesystem.hpp>
 
 #include "io.h"
 #include "util.h"
@@ -81,4 +82,17 @@ size_t IO::get_file_size() const {
     struct stat file_info;
     stat(file_path.data(), &file_info);
     return (size_t)(file_info.st_size);
+}
+
+std::string IO::get_db_file_dir_path() {
+    namespace bf = boost::filesystem;
+    auto dir_path = bf::path(__FILE__).parent_path();
+    std::string file_path = dir_path.generic_string()+"/db_file";
+    return file_path;
+}
+
+std::string IO::get_db_file_path(const std::string &file_name) {
+    using namespace DB::Enum;
+    std::string file_path = get_db_file_dir_path();
+    return file_path + '/' + file_name;
 }

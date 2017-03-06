@@ -20,12 +20,6 @@ namespace DB {
             FLOAT,
             VARCHAR
         };
-
-        enum : char {
-            RECORD_SUFFIX = 1,
-            INDEX_SUFFIX,
-            POS_SUFFIX
-        };
     }
 
     namespace Const {
@@ -52,8 +46,6 @@ namespace DB {
         inline void en_bytes<std::string>(std::vector<char> &bytes, const std::string &t){
             bytes = std::vector<char>(t.begin(), t.end());
         }
-
-        std::string get_db_file_dir_path();
     }
 
     namespace Type {
@@ -74,7 +66,6 @@ namespace DB {
                           const std::map<std::string, std::pair<char, size_t >> &col_property)
                     :table_name(table_name), key(key),col_property(col_property){}
 
-            std::string get_file_abs_path(char file_suffix)const;
             size_t get_record_size()const;
         };
     }

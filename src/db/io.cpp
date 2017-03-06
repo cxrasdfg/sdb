@@ -9,6 +9,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <boost/filesystem.hpp>
+#include <cppformat/format.h>
 
 #include "io.h"
 #include "util.h"
@@ -16,6 +17,22 @@
 using std::ios;
 using DB::Const::BLOCK_SIZE;
 using DB::Type::Bytes;
+namespace bf = boost::filesystem;
+
+void IO::create_file(const std::string &file_name) {
+    std::string file_path = get_db_file_path(file_name);
+    std::ifstream in(file_path);
+    if (in.is_open()) {
+        throw std::runtime_error(fmt::format("Error:filename[{}] already existed\n", file_name));
+    }
+    std::ofstream out(file_path, ios::binary);
+    out.close();
+}
+
+void IO::delete_file(const std::string &file_name) {
+    bool bl = bf::remove(get_db_file_path(file_name));
+    fmt::print("bool:{}\n", bl);
+}
 
 void IO::write_block(const DB::Type::Bytes &data, size_t block_num){
     if (data.size() != BLOCK_SIZE) {
@@ -85,7 +102,6 @@ size_t IO::get_file_size() const {
 }
 
 std::string IO::get_db_file_dir_path() {
-    namespace bf = boost::filesystem;
     auto dir_path = bf::path(__FILE__).parent_path();
     std::string file_path = dir_path.generic_string()+"/db_file";
     return file_path;

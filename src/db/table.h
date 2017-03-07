@@ -19,14 +19,11 @@ public:
 
     // get
     std::string get_file_abs_path(bool is_index)const;
-    // tuple operate
-    DB::Type::Bytes tuple_get_col_value(const DB::Type::Bytes &tuple,
-                                        const std::string &col_name)const;
 
     // sql
-    DB::Type::Bytes make_tuple(std::initializer_list<std::string> args);
 //    template <typename T, typename ...Args>
 //    static DB::Type::Bytes make_tuple(const T &t, const Args& ...args);
+    void new_table();
     void insert(std::initializer_list<std::string> args);
     void update(const std::string &col_name,
                 const std::string &op,

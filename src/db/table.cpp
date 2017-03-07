@@ -30,25 +30,7 @@ std::string Table::get_file_abs_path(bool is_index)const {
     return file_path;
 }
 
-DB::Type::Bytes Table::tuple_get_col_value(const DB::Type::Bytes &tuple,
-                                const std::string &col_name) const {
-    Pos pos = 0;
-    for (auto &&item : property.col_property) {
-        if (item.first == col_name) {
-            auto col_type = item.second.first;
-            auto col_size = item.second.second;
-            if (col_type == DB::Enum::VARCHAR) {
-                std::string str(col_size, '\0');
-            }
-        }
-        pos += item.second.second;
-    }
-}
-
 // SQL
-DB::Type::Bytes Table::make_tuple(std::initializer_list<std::string> args) {
-}
-
 void Table::insert(std::initializer_list<std::string> args) {
 }
 
@@ -61,4 +43,7 @@ void Table::remove(const std::string &col_name,
                    const std::string &op,
                    const std::string &value) {
 
+}
+
+void Table::new_table() {
 }

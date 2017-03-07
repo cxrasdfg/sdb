@@ -20,7 +20,6 @@ using DB::Type::PosList ;
 
 template <typename KeyType, typename DataType>
 struct BptNode {
-
     // type
 //    using lstSecType = boost::variant<std::shared_ptr<DataType>, std::shared_ptr<BptNode>>;
 //    using lstItemType = std::pair<KeyType, lstSecType>;
@@ -33,6 +32,7 @@ struct BptNode {
     std::list<std::pair<KeyType, Pos>> pos_lst;
 //    std::shared_ptr<BptNode> end_ptr;
     bool is_leaf = true;
+    bool is_new_node = true;
     Pos end_pos;
     Pos file_pos;
 
@@ -131,7 +131,7 @@ void BpTree<KeyType, DataType>::clear() {
 
 template <typename KeyType, typename DataType>
 void BpTree<KeyType, DataType>::write_info_block() {
-    IO io(table_property.get_file_abs_path(DB::Enum::INDEX_SUFFIX));
+    IO io(table_property.table_name+"_index.sdb");
     Bytes data(BLOCK_SIZE);
     // root pos
     size_t Pos_len = sizeof(root_pos);
@@ -145,21 +145,20 @@ void BpTree<KeyType, DataType>::write_info_block() {
         std::memcpy(beg+(j*Pos_len), &free_pos_list[j], Pos_len);
     }
     std::memcpy(beg+(free_pos_count*Pos_len), &free_end_pos, Pos_len);
-    io.write_block(data, 0);
+    io.write_file(data);
 }
 
 template <typename KeyType, typename DataType>
 void BpTree<KeyType, DataType>::initialize() {
     // set node_key_count
     size_t size_len = sizeof(size_t);
-    KeyType key_size = table_property.col_property[table_property.key].second;
-    size_t pos_size = sizeof(DB::Type::Pos);
-    node_key_count = (DB::Const::BLOCK_SIZE-pos_size-1-size_len)/(key_size+pos_size);
-    // read info block
-    IO io(table_property.get_file_abs_path(DB::Enum::INDEX_SUFFIX));
-    Bytes block_data = io.read_block(0);
-    // set root_pos
+    size_t key_size = table_property.col_property.at(table_property.key).second;
     size_t Pos_len = sizeof(Pos);
+    node_key_count = (DB::Const::BLOCK_SIZE-Pos_len-1-size_len)/(key_size+Pos_len);
+    // read info block
+    IO io(table_property.table_name+"_meta_index.sdb");
+    Bytes block_data = io.read_file();
+    // set root_pos
     std::memcpy(&root_pos, block_data.data(), Pos_len);
     // get free pos
     size_t free_pos_count;
@@ -210,6 +209,8 @@ void BpTree<KeyType, DataType>::remove(const KeyType &key){
         root_pos = read(root->pos_lst.begin()->second)->file_pos;
         free_pos_list.push_back(root->file_pos);
     } else if (root->pos_lst.size() == 0) {
+        free_end_pos = 0;
+        free_pos_list.clear();
         root_pos = 0;
     }
 }
@@ -217,12 +218,11 @@ void BpTree<KeyType, DataType>::remove(const KeyType &key){
 template <typename KeyType, typename DataType>
 typename BpTree<KeyType, DataType>::nodePtrType
 BpTree<KeyType, DataType>::read(DB::Type::Pos pos) const{
-    if (pos == 0) {
+    if (free_end_pos == 0) {
         return nullptr;
     }
     using DB::Function::de_bytes;
-    std::string path = table_property.get_file_abs_path(DB::Enum::INDEX_SUFFIX);
-    IO io(path);
+    IO io(table_property.table_name+"_index.sdb");
     Bytes block_data = io.read_block(pos / BLOCK_SIZE);
 
     // ptr
@@ -253,6 +253,7 @@ BpTree<KeyType, DataType>::read(DB::Type::Pos pos) const{
         de_bytes(Bytes(beg, beg+(pos_lst_len*item_len)), ptr->end_pos);
     }
     ptr->file_pos = pos;
+    ptr->is_new_node = false;
     return ptr;
 }
 
@@ -280,19 +281,18 @@ void BpTree<KeyType, DataType>::write(nodePtrType ptr) {
     if (is_leaf) {
         std::memcpy(beg+offset, &ptr->end_pos, key_len);
     }
-    IO io(table_property.get_file_abs_path(DB::Enum::INDEX_SUFFIX));
+    IO io(table_property.table_name+"_index.sdb");
     Pos write_pos;
-    if (ptr->file_pos) {
+    if (!ptr->is_new_node) {
         write_pos = ptr->file_pos;
     } else if (free_pos_list.empty()) {
         write_pos = free_end_pos;
         free_end_pos += BLOCK_SIZE;
-        ptr->file_pos = write_pos;
     } else {
         write_pos = free_pos_list.back();
         free_pos_list.pop_back();
-        ptr->file_pos = write_pos;
     }
+    ptr->file_pos = write_pos;
     size_t block_num = write_pos / BLOCK_SIZE;
     io.write_block(block_data, block_num);
 }
@@ -359,6 +359,7 @@ bool BpTree<KeyType, DataType>::node_merge(nodePtrType &ptr_1, nodePtrType &ptr_
     if (ptr_2->pos_lst.size() > node_key_count){
         auto left_ptr = node_split(ptr_2);
         left_ptr->file_pos = ptr_1->file_pos;
+        left_ptr->is_new_node = false;
         ptr_1 = left_ptr;
         write(ptr_1);
         write(ptr_2);

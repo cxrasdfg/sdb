@@ -1,5 +1,5 @@
 * sdb
-  sdb是一个简答的RDBMS。
+  sdb是一个简单的RDBMS。
 ** todo:
 *** TODO SQL parser
     - [X] DDL
@@ -7,14 +7,19 @@
     - [-] DML
       - [X] query
       - [ ] insert column
-*** DONE File mmap Read/Write
-    CLOSED: [2017-02-27 一 23:10]
+*** DONE IO
+      - [X] mmap
+        - [X] read block
+        - [X] write block
+      - [X] file
+        - [X] create/delete
+        - [X] read/write
 *** TODO B+ Tree
     - [X] insert
     - [X] write/read
     - [X] find
     - [X] print
-    - [ ] remove
+    - [X] remove
     - [ ] test
 *** TODO SQL 优化器
 *** TODO SQL 执行器

@@ -15,19 +15,20 @@
 using std::cout;
 using std::endl;
 using DB::Type::Bytes;
-using DB::Type::Pos;
+using DB::Type::size_t;
 using DB::Const::BLOCK_SIZE;
 
 DB::Type::TableProperty get_table_property();
-void table_init();
 void bpt_test();
 void io_test();
+void table_init_test();
 
 int main(void) {
     clock_t start = clock();
-    table_init();
-    bpt_test();
+//    table_init();
 //    io_test();
+    table_init_test();
+    bpt_test();
     std::cout << "time:" << (double)((clock()-start))/CLOCKS_PER_SEC << std::endl;
     return 0;
 }
@@ -39,30 +40,6 @@ DB::Type::TableProperty get_table_property(){
     };
     DB::Type::TableProperty tableProperty("test", "col_1", map);
     return tableProperty;
-}
-
-void table_init(){
-    // meta_index.sdb
-    IO io("test_meta_index.sdb");
-    size_t Pos_len = sizeof(Pos);
-    size_t size_len = sizeof(size_t);
-    Bytes bytes(Pos_len+size_len+size_len);
-    Pos root_pos = 0;
-    size_t free_pos_count = 0;
-    Pos free_end_pos = 0;
-    std::memcpy(bytes.data(), &root_pos, Pos_len);
-    std::memcpy(bytes.data()+size_len, &free_pos_count, size_len);
-    std::memcpy(bytes.data()+size_len+size_len, &free_end_pos, size_len);
-    io.write_file(bytes);
-
-    // meta_record
-    IO record_io("test_meta_record.sdb");
-    Bytes record_bytes(size_len*2);
-    size_t record_free_pos_count = 0;
-    size_t record_free_end_pos = 0;
-    std::memcpy(&record_free_pos_count, record_bytes.data(), size_len);
-    std::memcpy(&record_free_end_pos, record_bytes.data()+size_len, size_len);
-    record_io.write_file(record_bytes);
 }
 
 void bpt_test() {
@@ -126,4 +103,9 @@ void io_test(){
     // test create/delete file
     IO::create_file("test_create.sdb");
     IO::delete_file("test_create.sdb");
+}
+
+void table_init_test(){
+    Table::create_table(get_table_property());
+    Table table("test");
 }

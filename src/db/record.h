@@ -19,8 +19,8 @@ public:
 
     // record
     DB::Type::BytesList read_record(const DB::Type::PosList &pos_lst);
-    DB::Type::Pos insert_record(const DB::Type::Bytes &data);
-    void remove_record(DB::Type::Pos pos);
+    DB::Type::size_t insert_record(const DB::Type::Bytes &data);
+    void remove_record(DB::Type::size_t pos);
 
     // static method
     template <typename Func>
@@ -33,8 +33,8 @@ private:
     void write_free_pos();
 
 private:
-    std::vector<DB::Type::Pos> free_pos_lst;
-    DB::Type::Pos free_end_pos;
+    std::vector<DB::Type::size_t> free_pos_lst;
+    DB::Type::size_t free_end_pos;
     DB::Type::TableProperty property;
 };
 
@@ -46,7 +46,7 @@ void Record::tuple_op(const DB::Type::TableProperty &property,
     if (bytes.size() != property.get_record_size()) {
         throw std::runtime_error("Error: tuple print bytes size Error");
     }
-    DB::Type::Pos offset = 0;
+    DB::Type::size_t offset = 0;
     for (auto &&item : property.col_property) {
         char col_type = item.second.first;
         size_t col_len = item.second.second;

@@ -14,7 +14,7 @@
 
 using DB::Const::BLOCK_SIZE;
 using DB::Type::Bytes;
-using DB::Type::Pos;
+using DB::Type::size_t;
 using DB::Type::PosList ;
 
 
@@ -23,18 +23,18 @@ struct BptNode {
     // type
 //    using lstSecType = boost::variant<std::shared_ptr<DataType>, std::shared_ptr<BptNode>>;
 //    using lstItemType = std::pair<KeyType, lstSecType>;
-    using lstPosItemType = std::pair<KeyType, Pos>;
+    using lstPosItemType = std::pair<KeyType, size_t>;
 //    using lstType = std::list<lstItemType>;
     using PoslstType = std::list<lstPosItemType>;
     using nodePtrType = std::shared_ptr<BptNode>;
 
 //    std::list<std::pair<KeyType, lstSecType>> lst;
-    std::list<std::pair<KeyType, Pos>> pos_lst;
+    std::list<std::pair<KeyType, size_t>> pos_lst;
 //    std::shared_ptr<BptNode> end_ptr;
     bool is_leaf = true;
     bool is_new_node = true;
-    Pos end_pos;
-    Pos file_pos;
+    size_t end_pos;
+    size_t file_pos;
 
     // === 节点操作 ===
     // 获取节点最后的key
@@ -72,16 +72,16 @@ public:
 
     void insert(const KeyType &key, const DataType &data);
     void remove(const KeyType &key);
-    typename BpTree<KeyType, DataType>::nodePtrType read(DB::Type::Pos pos) const;
+    typename BpTree<KeyType, DataType>::nodePtrType read(DB::Type::size_t pos) const;
     void write(nodePtrType ptr);
     DataType find(const KeyType &key)const{return find_r(key, read(root_pos));}
     void print()const;
 
 private:
 //    nodePtrType root;
-    Pos root_pos;
+    size_t root_pos;
     PosList free_pos_list;
-    Pos free_end_pos;
+    size_t free_end_pos;
     size_t node_key_count;
     DB::Type::TableProperty table_property;
 
@@ -153,7 +153,7 @@ void BpTree<KeyType, DataType>::initialize() {
     // set node_key_count
     size_t size_len = sizeof(size_t);
     size_t key_size = table_property.col_property.at(table_property.key).second;
-    size_t Pos_len = sizeof(Pos);
+    size_t Pos_len = sizeof(size_t);
     node_key_count = (DB::Const::BLOCK_SIZE-Pos_len-1-size_len)/(key_size+Pos_len);
     // read info block
     IO io(table_property.table_name+"_meta_index.sdb");
@@ -165,7 +165,7 @@ void BpTree<KeyType, DataType>::initialize() {
     std::memcpy(&free_pos_count, block_data.data()+Pos_len, sizeof(size_t));
     auto beg = block_data.data()+Pos_len+size_len;
     for (size_t j = 0; j < free_pos_count; ++j) {
-        Pos pos;
+        size_t pos;
         std::memcpy(&pos, beg+(j*Pos_len), Pos_len);
         free_pos_list.push_back(pos);
     }
@@ -217,11 +217,10 @@ void BpTree<KeyType, DataType>::remove(const KeyType &key){
 
 template <typename KeyType, typename DataType>
 typename BpTree<KeyType, DataType>::nodePtrType
-BpTree<KeyType, DataType>::read(DB::Type::Pos pos) const{
+BpTree<KeyType, DataType>::read(DB::Type::size_t pos) const{
     if (free_end_pos == 0) {
         return nullptr;
     }
-    using DB::Function::de_bytes;
     IO io(table_property.table_name+"_index.sdb");
     Bytes block_data = io.read_block(pos / BLOCK_SIZE);
 
@@ -243,14 +242,14 @@ BpTree<KeyType, DataType>::read(DB::Type::Pos pos) const{
         auto item_tem = item_beg+key_len;
         auto item_end = item_tem + sizeof(pos);
         KeyType key;
-        Pos child_pos;
-        de_bytes(Bytes(item_beg, item_tem), key);
-        de_bytes(Bytes(item_tem, item_end), child_pos);
-        std::pair<KeyType, Pos> item(key, child_pos);
+        size_t child_pos;
+        std::memcpy(&key, item_beg, key_len);
+        std::memcpy(&child_pos, item_tem, sizeof(pos));
+        std::pair<KeyType, size_t> item(key, child_pos);
         ptr->pos_lst.push_back(item);
     }
     if (ptr->is_leaf) {
-        de_bytes(Bytes(beg, beg+(pos_lst_len*item_len)), ptr->end_pos);
+        std::memcpy(&ptr->end_pos, beg+(pos_lst_len*item_len), sizeof(ptr->end_pos));
     }
     ptr->file_pos = pos;
     ptr->is_new_node = false;
@@ -261,8 +260,8 @@ template <typename KeyType, typename DataType>
 void BpTree<KeyType, DataType>::write(nodePtrType ptr) {
     using DB::Function::en_bytes;
     Bytes block_data(DB::Const::BLOCK_SIZE);
-    size_t key_len = table_property.col_property[table_property.key].second;
-    size_t item_len = key_len + sizeof(Pos);
+    size_t key_len = table_property.col_property.at(table_property.key).second;
+    size_t item_len = key_len + sizeof(size_t);
     size_t size_len = sizeof(size_t);
     size_t char_len = sizeof(char);
     char is_leaf = ptr->is_leaf;
@@ -272,17 +271,16 @@ void BpTree<KeyType, DataType>::write(nodePtrType ptr) {
     auto beg = block_data.data()+sizeof(char)+size_len;
     size_t offset = 0;
     for (auto &&item : ptr->pos_lst) {
-        Bytes key_bytes;
-        en_bytes(key_bytes, item.first);
+        Bytes key_bytes = en_bytes(item.first);
         std::memcpy(beg+offset, key_bytes.data(), key_len);
-        std::memcpy(beg+offset+key_len, &item.second, sizeof(Pos));
+        std::memcpy(beg+offset+key_len, &item.second, sizeof(size_t));
         offset += item_len;
     }
     if (is_leaf) {
         std::memcpy(beg+offset, &ptr->end_pos, key_len);
     }
     IO io(table_property.table_name+"_index.sdb");
-    Pos write_pos;
+    size_t write_pos;
     if (!ptr->is_new_node) {
         write_pos = ptr->file_pos;
     } else if (free_pos_list.empty()) {
@@ -411,7 +409,7 @@ BpTree<KeyType, DataType>::insert_r(const KeyType &key, const DataType &data, no
         } else if (key < iter->first) {
             if (is_leaf){
                 Record record(table_property);
-                Pos record_pos = record.insert_record(data);
+                size_t record_pos = record.insert_record(data);
                 ptr->pos_lst.insert(iter, std::make_pair(key, record_pos));
             } else {
                 auto node = read(iter->second);
@@ -429,7 +427,7 @@ BpTree<KeyType, DataType>::insert_r(const KeyType &key, const DataType &data, no
         auto lst_end_ptr = std::prev(ptr->pos_lst.end());
         if (is_leaf){
             Record record(table_property);
-            Pos record_pos = record.insert_record(data);
+            size_t record_pos = record.insert_record(data);
             ptr->pos_lst.insert(ptr->pos_lst.end(), std::make_pair(key, record_pos));
         } else {
             auto node = read(lst_end_ptr->second);

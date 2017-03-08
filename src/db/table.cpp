@@ -15,20 +15,9 @@
 using std::ios;
 using std::vector;
 using DB::Const::BLOCK_SIZE;
-using DB::Type::Pos;
+using DB::Type::size_t;
+using DB::Type::Bytes;
 
-
-std::string Table::get_file_abs_path(bool is_index)const {
-    namespace bf = boost::filesystem;
-    auto dir_path = bf::path(__FILE__).parent_path();
-    std::string file_path = dir_path.generic_string()+"/db_file/";
-    if (is_index) {
-        file_path += property.table_name + "_index.sdb";
-    } else {
-        file_path += property.table_name + ".sdb";
-    }
-    return file_path;
-}
 
 // SQL
 void Table::insert(std::initializer_list<std::string> args) {
@@ -45,5 +34,96 @@ void Table::remove(const std::string &col_name,
 
 }
 
-void Table::new_table() {
+void Table::create_table(const DB::Type::TableProperty &property) {
+    // table meta
+    write_meta_data(property);
+
+    // meta_index.sdb
+    IO io("test_meta_index.sdb");
+    size_t Pos_len = sizeof(size_t);
+    size_t size_len = sizeof(size_t);
+    Bytes bytes(Pos_len+size_len+size_len);
+    size_t root_pos = 0;
+    size_t free_pos_count = 0;
+    size_t free_end_pos = 0;
+    std::memcpy(bytes.data(), &root_pos, Pos_len);
+    std::memcpy(bytes.data()+size_len, &free_pos_count, size_len);
+    std::memcpy(bytes.data()+size_len+size_len, &free_end_pos, size_len);
+    io.write_file(bytes);
+
+    // meta_record
+    IO record_io("test_meta_record.sdb");
+    Bytes record_bytes(size_len*2);
+    size_t record_free_pos_count = 0;
+    size_t record_free_end_pos = 0;
+    std::memcpy(&record_free_pos_count, record_bytes.data(), size_len);
+    std::memcpy(&record_free_end_pos, record_bytes.data()+size_len, size_len);
+    record_io.write_file(record_bytes);
+}
+
+// ========= private ========
+void Table::read_meta_data(const std::string &table_name) {
+    // --- read table name key map ---
+
+    IO io(table_name+"_meta.sdb");
+    Bytes bytes = io.read_file();
+    auto beg = bytes.data();
+    size_t offset = 0;
+    // table name size
+    size_t size_len = sizeof(size_t);
+    // key name size
+    size_t key_name_size;
+    std::memcpy(&key_name_size, beg+offset, size_len);
+    offset += size_len;
+    property.key = std::string(beg+offset, key_name_size);
+    offset += key_name_size;
+
+    size_t col_count;
+    std::memcpy(&col_count, beg+offset, size_len);
+    std::map<std::string, std::pair<char, size_t>> map;
+    offset += size_len;
+    for (int i = 0; i < col_count; ++i) {
+        // cal name
+        size_t col_name_size;
+        std::memcpy(&col_name_size, beg+offset, size_len);
+        offset += size_len;
+        std::string col_name(beg+offset, col_name_size);
+        offset += col_name_size;
+
+        // type
+        char type;
+        std::memcpy(&type, beg+offset, sizeof(char));
+        offset += sizeof(char);
+        // type_size
+        size_t type_size;
+        std::memcpy(&type_size, beg+offset, sizeof(size_t));
+        offset += sizeof(size_t);
+        map[col_name] = std::make_pair(type, type_size);
+    }
+}
+
+void Table::write_meta_data(const DB::Type::TableProperty &property) {
+    // write table_name key map
+
+    Bytes bytes;
+    // key
+    Bytes key_size_bytes = DB::Function::en_bytes(property.key.size());
+    bytes.insert(bytes.end(), key_size_bytes.begin(), key_size_bytes.end());
+    bytes.insert(bytes.end(), property.key.begin(), property.key.end());
+    //map
+    Bytes map_count_bytes = DB::Function::en_bytes(property.col_property.size());
+    bytes.insert(bytes.end(), map_count_bytes.begin(), map_count_bytes.end());
+    for (auto &&item : property.col_property) {
+        // col name
+        Bytes col_size_bytes = DB::Function::en_bytes(item.first.size());
+        bytes.insert(bytes.end(), col_size_bytes.begin(), col_size_bytes.end());
+        bytes.insert(bytes.end(), item.first.begin(), item.first.end());
+        // type
+        bytes.push_back(item.second.first);
+        // type size
+        Bytes type_size_bytes = DB::Function::en_bytes(item.second.second);
+        bytes.insert(bytes.end(), type_size_bytes.begin(), type_size_bytes.end());
+    }
+    IO io(property.table_name+"_meta.sdb");
+    io.write_file(bytes);
 }

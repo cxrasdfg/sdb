@@ -4,6 +4,7 @@
 #include <string>
 #include <map>
 #include <initializer_list>
+#include <cppformat/format.h>
 
 #include "record.h"
 #include "util.h"
@@ -11,19 +12,13 @@
 class Table {
 public:
     Table()= delete;
-//    Table(const Table &table)
-//            :table_name(table.table_name), BLOCK_SIZE(table.BLOCK_SIZE){}
-//    Table(Table &&table)
-//            :table_name(table.table_name), BLOCK_SIZE(table.BLOCK_SIZE){}
-    Table(const DB::Type::TableProperty &property):property(property){}
-
-    // get
-    std::string get_file_abs_path(bool is_index)const;
-
+    Table(const std::string &table_name){
+        read_meta_data(table_name);
+    }
     // sql
 //    template <typename T, typename ...Args>
 //    static DB::Type::Bytes make_tuple(const T &t, const Args& ...args);
-    void new_table();
+    static void create_table(const DB::Type::TableProperty &property);
     void insert(std::initializer_list<std::string> args);
     void update(const std::string &col_name,
                 const std::string &op,
@@ -35,6 +30,8 @@ public:
 private:
     DB::Type::TableProperty property;
 
+    void read_meta_data(const std::string &table_name);
+    static void write_meta_data(const DB::Type::TableProperty &property);
     // function
 //    template <typename T>
 //    static DB::Type::Bytes make_tuple(const T &t);

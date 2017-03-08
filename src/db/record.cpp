@@ -4,16 +4,16 @@
 #include <map>
 #include <functional>
 
-using DB::Type::Pos;
+using DB::Type::size_t;
 using DB::Type::Bytes ;
 using DB::Type::BytesList ;
 using DB::Const::BLOCK_SIZE;
 
 DB::Type::BytesList Record::read_record(const DB::Type::PosList &pos_lst) {
-    std::map<size_t, std::vector<Pos>> block_offsets_map;
+    std::map<size_t, std::vector<size_t>> block_offsets_map;
     for (auto &&item : pos_lst) {
         size_t block_num = item / BLOCK_SIZE;
-        Pos offset = item % BLOCK_SIZE;
+        size_t offset = item % BLOCK_SIZE;
         block_offsets_map[block_num].push_back(offset);
     }
     IO io(property.table_name+"_record.sdb");
@@ -30,11 +30,11 @@ DB::Type::BytesList Record::read_record(const DB::Type::PosList &pos_lst) {
     return bytes_list;
 }
 
-DB::Type::Pos Record::insert_record(const DB::Type::Bytes &data) {
+DB::Type::size_t Record::insert_record(const DB::Type::Bytes &data) {
     if (data.size() != property.get_record_size()) {
         throw std::runtime_error("Error: record_tuple_lst is empty");
     }
-    Pos pos;
+    size_t pos;
     if (free_pos_lst.empty()) {
         pos = free_end_pos;
         free_end_pos += property.get_record_size();
@@ -43,7 +43,7 @@ DB::Type::Pos Record::insert_record(const DB::Type::Bytes &data) {
         free_pos_lst.pop_back();
     }
     size_t block_num = pos / BLOCK_SIZE;
-    Pos offset =  pos % BLOCK_SIZE;
+    size_t offset =  pos % BLOCK_SIZE;
     IO io(property.table_name+"_record.sdb");
     Bytes block_data = io.read_block(block_num);
     std::memcpy(block_data.data()+offset, data.data(), data.size());
@@ -51,7 +51,7 @@ DB::Type::Pos Record::insert_record(const DB::Type::Bytes &data) {
     return pos;
 }
 
-void Record::remove_record(DB::Type::Pos pos) {
+void Record::remove_record(DB::Type::size_t pos) {
     if (pos > free_end_pos) {
         throw std::runtime_error(
                 std::string("Error: Record pos error:") + std::to_string(pos)
@@ -69,7 +69,7 @@ void Record::read_free_pos() {
     std::memcpy(&pos_count, block_data.data(), pos_len);
     auto beg = block_data.data()+pos_len;
     for (size_t i = 0; i < pos_count; ++i) {
-        Pos pos;
+        size_t pos;
         std::memcpy(&pos, beg+(pos_len*i), pos_len);
         free_pos_lst.push_back(pos);
     }
@@ -78,7 +78,7 @@ void Record::read_free_pos() {
 
 void Record::write_free_pos() {
     size_t size_len = sizeof(size_t);
-    size_t Pos_len = sizeof(Pos);
+    size_t Pos_len = sizeof(size_t);
     DB::Type::Bytes bytes(size_len*2+free_pos_lst.size()*Pos_len);
     size_t free_pos_lst_len = free_pos_lst.size();
     std::memcpy(bytes.data(), &free_pos_lst_len, size_len);

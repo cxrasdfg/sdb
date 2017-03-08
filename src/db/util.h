@@ -27,30 +27,9 @@ namespace DB {
         const size_t BLOCK_SIZE = size_t(getpagesize());
     }
 
-    namespace Function {
-        template <typename T>
-        void de_bytes(const std::vector<char> &bytes, T &t){
-            std::memcpy(&t, bytes.data(), sizeof(t));
-        }
-        template <>
-        inline void de_bytes<std::string>(const std::vector<char> &bytes, std::string &t){
-            t = std::string(bytes.begin(), bytes.end());
-        }
-
-        template <typename T>
-        void en_bytes(std::vector<char> &bytes, const T &t){
-            bytes = std::vector<char>(sizeof(t));
-            std::memcpy(bytes.data(), &t, sizeof(t));
-        }
-        template <>
-        inline void en_bytes<std::string>(std::vector<char> &bytes, const std::string &t){
-            bytes = std::vector<char>(t.begin(), t.end());
-        }
-    }
-
     namespace Type {
-        using Pos = size_t;
-        using PosList = std::vector<Pos>;
+        using size_t = size_t;
+        using PosList = std::vector<size_t>;
         using Byte = char;
         using Bytes = std::vector<Byte>;
         using BytesList = std::vector<Bytes>;
@@ -60,7 +39,7 @@ namespace DB {
             std::string key;
             std::map<std::string, std::pair<char, size_t>> col_property;
 
-            TableProperty()= delete;
+            TableProperty(){}
             TableProperty(const std::string &table_name,
                           const std::string &key,
                           const std::map<std::string, std::pair<char, size_t >> &col_property)
@@ -71,6 +50,13 @@ namespace DB {
     }
 
     namespace Function {
+        template <typename T>
+        DB::Type::Bytes en_bytes(const T &t){
+            DB::Type::Bytes bytes = std::vector<char>(sizeof(t));
+            std::memcpy(bytes.data(), &t, sizeof(t));
+            return bytes;
+        }
+
         inline void bytes_print(const DB::Type::Bytes &bytes) {
             for (auto &&item : bytes) {
                 std::cout << item;

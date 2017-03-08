@@ -39,7 +39,7 @@ void Table::create_table(const DB::Type::TableProperty &property) {
     write_meta_data(property);
 
     // meta_index.sdb
-    IO io("test_meta_index.sdb");
+    IO io(property.table_name+"_meta_index.sdb");
     size_t Pos_len = sizeof(size_t);
     size_t size_len = sizeof(size_t);
     Bytes bytes(Pos_len+size_len+size_len);
@@ -52,13 +52,24 @@ void Table::create_table(const DB::Type::TableProperty &property) {
     io.write_file(bytes);
 
     // meta_record
-    IO record_io("test_meta_record.sdb");
+    IO record_io(property.table_name+"_meta_record.sdb");
     Bytes record_bytes(size_len*2);
     size_t record_free_pos_count = 0;
     size_t record_free_end_pos = 0;
     std::memcpy(&record_free_pos_count, record_bytes.data(), size_len);
     std::memcpy(&record_free_end_pos, record_bytes.data()+size_len, size_len);
     record_io.write_file(record_bytes);
+    // index and record file
+    IO::create_file(property.table_name+"_record.sdb");
+    IO::create_file(property.table_name+"_index.sdb");
+}
+
+void Table::drop_table(const std::string &table_name) {
+    IO::delete_file(table_name+"_meta.sdb");
+    IO::delete_file(table_name+"_meta_index.sdb");
+    IO::delete_file(table_name+"_index.sdb");
+    IO::delete_file(table_name+"_meta_record.sdb");
+    IO::delete_file(table_name+"_record.sdb");
 }
 
 // ========= private ========

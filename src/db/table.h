@@ -19,6 +19,7 @@ public:
 //    template <typename T, typename ...Args>
 //    static DB::Type::Bytes make_tuple(const T &t, const Args& ...args);
     static void create_table(const DB::Type::TableProperty &property);
+    static void drop_table(const std::string &table_name);
     void insert(std::initializer_list<std::string> args);
     void update(const std::string &col_name,
                 const std::string &op,

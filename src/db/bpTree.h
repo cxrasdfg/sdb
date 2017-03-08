@@ -131,7 +131,7 @@ void BpTree<KeyType, DataType>::clear() {
 
 template <typename KeyType, typename DataType>
 void BpTree<KeyType, DataType>::write_info_block() {
-    IO io(table_property.table_name+"_index.sdb");
+    IO io(table_property.table_name+"_meta_index.sdb");
     Bytes data(BLOCK_SIZE);
     // root pos
     size_t Pos_len = sizeof(root_pos);

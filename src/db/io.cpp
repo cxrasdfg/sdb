@@ -31,7 +31,6 @@ void IO::create_file(const std::string &file_name) {
 
 void IO::delete_file(const std::string &file_name) {
     bool bl = bf::remove(get_db_file_path(file_name));
-    fmt::print("bool:{}\n", bl);
 }
 
 void IO::write_block(const DB::Type::Bytes &data, size_t block_num){
@@ -55,20 +54,20 @@ void IO::write_block(const DB::Type::Bytes &data, size_t block_num){
 }
 
 DB::Type::Bytes IO::read_block(size_t block_num) {
-    int fd = open(file_path.data(), O_RDONLY);
+    int fd = open(file_path.data(), O_RDWR);
     if (fd < 0) {
         throw std::runtime_error(
             std::string("Error: open file error:")+file_path
         );
     }
     if (get_file_size() < (block_num+1)*BLOCK_SIZE) {
-        lseek(fd, BLOCK_SIZE*(1+block_num), SEEK_SET);
+        lseek(fd, BLOCK_SIZE*(block_num+1), SEEK_SET);
         write(fd, "", 1);
     }
     char *buff = (char*)mmap(nullptr, BLOCK_SIZE, PROT_READ, MAP_SHARED, fd, BLOCK_SIZE*block_num);
     Bytes bytes(buff, buff+BLOCK_SIZE);
-    close(fd);
     munmap(buff, BLOCK_SIZE);
+    close(fd);
     return bytes;
 }
 
@@ -93,6 +92,7 @@ void IO::write_file(const DB::Type::Bytes &data) {
         );
     }
     out.write(data.data(), data.size());
+    out.close();
 }
 
 size_t IO::get_file_size() const {

@@ -7,6 +7,7 @@
 #include <ctime>
 #include <functional>
 #include <cppformat/format.h>
+#include <zconf.h>
 
 #include "table.h"
 #include "util.h"
@@ -27,6 +28,7 @@ int main(void) {
     clock_t start = clock();
 //    table_init();
 //    io_test();
+    Table::drop_table("test");
     table_init_test();
     bpt_test();
     std::cout << "time:" << (double)((clock()-start))/CLOCKS_PER_SEC << std::endl;
@@ -83,6 +85,8 @@ void bpt_test() {
 
 void io_test(){
     // test read/write block
+    IO::delete_file("test_meta_record.sdb");
+    IO::create_file("test_meta_record.sdb");
     IO block_io("test_meta_record.sdb");
     Bytes bytes(BLOCK_SIZE);
     for (int i = 0; i < 100; ++i) {
@@ -107,5 +111,4 @@ void io_test(){
 
 void table_init_test(){
     Table::create_table(get_table_property());
-    Table table("test");
 }

@@ -145,7 +145,7 @@ BpTree::nodePtrType BpTree::read(DB::Type::Pos pos) const{
         auto item_end = item_tem + sizeof(pos);
         auto type_info = table_property.col_property.at(table_property.key);
         Bytes key_data(item_beg, item_beg+key_len);
-        Value key(type_info.first, type_info.second, key_data);
+        Value key(type_info.first, key_data);
         Pos child_pos;
         std::memcpy(&child_pos, item_tem, sizeof(pos));
         auto item = std::make_pair(key, child_pos);
@@ -173,7 +173,7 @@ void BpTree::write(nodePtrType ptr) {
     auto beg = block_data.data()+sizeof(char)+size_len;
     size_t offset = 0;
     for (auto &&item : ptr->pos_lst) {
-        Bytes key_bytes = en_bytes(item.first);
+        Bytes key_bytes = item.first.data;
         std::memcpy(beg+offset, key_bytes.data(), key_len);
         std::memcpy(beg+offset+key_len, &item.second, sizeof(size_t));
         offset += item_len;

@@ -25,8 +25,12 @@ public:
                 const std::string &op,
                 const std::string &value);
 
-    // tuple
-    DB::Type::Bytes values_to_bytes(const std::vector<std::string> &values);
+    // === tuple_lst ===
+    // convert
+    std::vector<DB::Type::Value> str_lst_to_values(const std::vector<std::string> &str_lst);
+    DB::Type::Bytes values_to_bytes(const std::vector<DB::Type::Value> &values);
+    // col
+    DB::Type::Value get_col_value(const std::string &col_name, const std::vector<DB::Type::Value> &values);
 
 private:
     DB::Type::TableProperty property;

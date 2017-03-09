@@ -3,7 +3,6 @@
 
 #include <string>
 #include <map>
-#include <initializer_list>
 #include <cppformat/format.h>
 
 #include "record.h"
@@ -16,11 +15,9 @@ public:
         read_meta_data(table_name);
     }
     // sql
-//    template <typename T, typename ...Args>
-//    static DB::Type::Bytes make_tuple(const T &t, const Args& ...args);
     static void create_table(const DB::Type::TableProperty &property);
     static void drop_table(const std::string &table_name);
-    void insert(std::initializer_list<std::string> args);
+    void insert(const std::vector<std::string> &col_value_lst);
     void update(const std::string &col_name,
                 const std::string &op,
                 const std::string &value);
@@ -28,30 +25,14 @@ public:
                 const std::string &op,
                 const std::string &value);
 
+    // tuple
+    DB::Type::Bytes values_to_bytes(const std::vector<std::string> &values);
+
 private:
     DB::Type::TableProperty property;
 
     void read_meta_data(const std::string &table_name);
     static void write_meta_data(const DB::Type::TableProperty &property);
-    // function
-//    template <typename T>
-//    static DB::Type::Bytes make_tuple(const T &t);
 };
-
-//template <typename T>
-//DB::Type::Bytes Table::make_tuple(const T &t){
-//    DB::Type::Bytes tuple(sizeof(t));
-//    std::memcpy(tuple.data(), &t, sizeof(t));
-//    return tuple;
-//}
-//
-//template <typename T, typename ...Args>
-//DB::Type::Bytes Table::make_tuple(const T &t, const Args& ...args){
-//    DB::Type::Bytes tuple(sizeof(t));
-//    std::memcpy(tuple.data(), &t, sizeof(t));
-//    DB::Type::Bytes bytes = make_tuple(args...);
-//    tuple.insert(tuple.end(), bytes.begin(), bytes.end());
-//    return tuple;
-//}
 
 #endif

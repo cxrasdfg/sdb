@@ -4,7 +4,7 @@
 #include <map>
 #include <functional>
 
-using DB::Type::size_t;
+using DB::Type::Pos;
 using DB::Type::Bytes ;
 using DB::Type::BytesList ;
 using DB::Const::BLOCK_SIZE;
@@ -30,7 +30,7 @@ DB::Type::BytesList Record::read_record(const DB::Type::PosList &pos_lst) {
     return bytes_list;
 }
 
-DB::Type::size_t Record::insert_record(const DB::Type::Bytes &data) {
+DB::Type::Pos Record::insert_record(const DB::Type::Bytes &data) {
     if (data.size() != property.get_record_size()) {
         throw std::runtime_error("Error: record_tuple_lst is empty");
     }
@@ -51,7 +51,7 @@ DB::Type::size_t Record::insert_record(const DB::Type::Bytes &data) {
     return pos;
 }
 
-void Record::remove_record(DB::Type::size_t pos) {
+void Record::remove_record(DB::Type::Pos pos) {
     if (pos > free_end_pos) {
         throw std::runtime_error(
                 std::string("Error: Record pos error:") + std::to_string(pos)
@@ -77,16 +77,16 @@ void Record::read_free_pos() {
 }
 
 void Record::write_free_pos() {
-    size_t size_len = sizeof(size_t);
-    size_t Pos_len = sizeof(size_t);
-    DB::Type::Bytes bytes(size_len*2+free_pos_lst.size()*Pos_len);
+    size_t SIZE_LEN = sizeof(size_t);
+    size_t POS_LEN = sizeof(size_t);
+    DB::Type::Bytes bytes(SIZE_LEN*2+free_pos_lst.size()*POS_LEN);
     size_t free_pos_lst_len = free_pos_lst.size();
-    std::memcpy(bytes.data(), &free_pos_lst_len, size_len);
+    std::memcpy(bytes.data(), &free_pos_lst_len, SIZE_LEN);
     auto beg = bytes.data()+sizeof(size_t);
     for (size_t i = 0; i < free_pos_lst_len; ++i) {
-        std::memcpy(beg+(i*Pos_len), &free_pos_lst[i], Pos_len);
+        std::memcpy(beg+(i*POS_LEN), &free_pos_lst[i], POS_LEN);
     }
-    std::memcpy(beg+(Pos_len*free_pos_lst_len), &free_end_pos, Pos_len);
+    std::memcpy(beg+(POS_LEN*free_pos_lst_len), &free_end_pos, POS_LEN);
     IO io(property.table_name+"_meta_record.sdb");
     io.write_file(bytes);
 }

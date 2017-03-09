@@ -7,7 +7,6 @@
 #include <ctime>
 #include <functional>
 #include <cppformat/format.h>
-#include <zconf.h>
 
 #include "table.h"
 #include "util.h"
@@ -16,8 +15,11 @@
 using std::cout;
 using std::endl;
 using DB::Type::Bytes;
-using DB::Type::size_t;
+using DB::Type::Pos;
 using DB::Const::BLOCK_SIZE;
+using DB::Type::Value;
+using DB::Enum::ColType;
+using DB::Type::Int;
 
 DB::Type::TableProperty get_table_property();
 void bpt_test();
@@ -26,7 +28,6 @@ void table_init_test();
 
 int main(void) {
     clock_t start = clock();
-//    table_init();
 //    io_test();
     Table::drop_table("test");
     table_init_test();
@@ -36,51 +37,51 @@ int main(void) {
 }
 
 DB::Type::TableProperty get_table_property(){
-    std::map<std::string, std::pair<char, size_t >> map{
-            {"col_1", std::make_pair(DB::Enum::INT, 4)},
+    std::vector<std::string> col_name_lst{"col_1", "col_2"};
+    DB::Type::TableProperty::ColProperty map{
+            {"col_1", std::make_pair(DB::Enum::INT, 8)},
             {"col_2", std::make_pair(DB::Enum::VARCHAR, 8)}
     };
-    DB::Type::TableProperty tableProperty("test", "col_1", map);
+    DB::Type::TableProperty tableProperty("test", "col_1", col_name_lst, map);
     return tableProperty;
 }
 
 void bpt_test() {
     auto property = get_table_property();
-    BpTree<int, DB::Type::Bytes> bpTree(property);
-    Bytes bytes(12);
+    BpTree bpTree(property);
+    Bytes bytes(property.get_record_size());
 //    for (int j = 0; j < 10; ++j) {
 //
 //    }
-    int key = 1;
-    std::memcpy(bytes.data(), &key, 4);
-    std::memcpy(bytes.data()+4, std::string("fffffffff").data(), 8);
+    Int key = 1;
+    std::memcpy(bytes.data(), &key, 8);
+    std::memcpy(bytes.data()+8, std::string("fffffffff").data(), 8);
     // insert test
-    for (int j = 0; j < 1000; j += 2) {
-        bpTree.insert(j, bytes);
+    for (Int j = 0; j < 1000; j += 2) {
+        bpTree.insert(Value(j), bytes);
     }
-    bpTree.print();
-    for (int j = 1; j < 1000; j += 2) {
-        bpTree.insert(j, bytes);
-    }
+//    bpTree.print();
+//    for (int j = 1; j < 1000; j += 2) {
+//        bpTree.insert(j, bytes);
+//    }
     // find test
-    bytes = bpTree.find(999);
-    std::memcpy(&key, bytes.data(), sizeof(int));
-    cout << "key:" << key << endl;
-    cout << "data:" << std::string(bytes.data()+4, bytes.data()+bytes.size()) << std::endl;
-    Record::tuple_op(property, bytes, [](auto x){cout<<x<<" ";});
-    std::cout << endl;
+    bpTree.print();
+//    bytes = bpTree.find(999);
+//    std::memcpy(&key, bytes.data(), sizeof(int));
+//    Record::tuple_op(property, bytes, [](auto x){cout<<x<<" ";});
+//    std::cout << endl;
 //     remove test
-    for (int j = 0; j < 1000; j += 2) {
-        bpTree.remove(j);
-    }
-    bpTree.print();
-    for (int j = 1000; j < 1500; j += 2) {
-        bpTree.insert(j, bytes);
-    }
-    for (int j = 1; j < 1000; j += 2) {
-        bpTree.remove(j);
-    }
-    bpTree.print();
+//    for (int j = 0; j < 1000; j += 2) {
+//        bpTree.remove(j);
+//    }
+//    bpTree.print();
+//    for (int j = 1000; j < 1500; j += 2) {
+//        bpTree.insert(j, bytes);
+//    }
+//    for (int j = 1; j < 1000; j += 2) {
+//        bpTree.remove(j);
+//    }
+//    bpTree.print();
 }
 
 void io_test(){

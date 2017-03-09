@@ -15,12 +15,13 @@
 using std::ios;
 using std::vector;
 using DB::Const::BLOCK_SIZE;
-using DB::Type::size_t;
+using DB::Type::Pos;
 using DB::Type::Bytes;
 
 
 // SQL
-void Table::insert(std::initializer_list<std::string> args) {
+void Table::insert(const vector<std::string> &col_value_lst) {
+    Bytes bytes = values_to_bytes(col_value_lst);
 }
 
 void Table::update(const std::string &col_name,
@@ -137,4 +138,20 @@ void Table::write_meta_data(const DB::Type::TableProperty &property) {
     }
     IO io(property.table_name+"_meta.sdb");
     io.write_file(bytes);
+}
+
+// ========= tuple =========
+DB::Type::Bytes Table::values_to_bytes(const std::vector<std::string> &values) {
+    if (values.size() != property.col_property.size()) {
+        throw std::runtime_error("Error: col values count error");
+    }
+    auto col_name_lst = property.col_name_lst;
+    Bytes bytes;
+    for (int i = 0; i < col_name_lst.size(); ++i) {
+        auto item = property.col_property.at(col_name_lst[i]);
+        Bytes data(item.second);
+        std::memcpy(data.data(), values[i].data(), item.second);
+        bytes.insert(bytes.end(), data.begin(), data.end());
+    }
+    return bytes;
 }

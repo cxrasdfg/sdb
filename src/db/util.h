@@ -10,14 +10,15 @@
 #include <string>
 #include <iostream>
 #include <map>
+#include <cppformat/format.h>
 
 
 namespace DB {
     namespace Enum {
-        enum : char {
-            CHAR = 1,
-            INT,
+        enum ColType: char {
+            INT = 1,
             FLOAT,
+            CHAR,
             VARCHAR
         };
     }
@@ -25,25 +26,146 @@ namespace DB {
     namespace Const {
         #include <unistd.h>
         const size_t BLOCK_SIZE = size_t(getpagesize());
+        const size_t SIZE_SIZE = sizeof(size_t);
+        const size_t INT_SIZE = 64;
+        const size_t FLOAT_SIZE = sizeof(float);
+        const size_t POS_SIZE = sizeof(size_t);
     }
 
     namespace Type {
-        using size_t = size_t;
-        using PosList = std::vector<size_t>;
+        using Int = int64_t;
+        using String = std::string;
+        using Float = double;
+        using Pos = size_t;
+        using PosList = std::vector<Pos>;
         using Byte = char;
         using Bytes = std::vector<Byte>;
         using BytesList = std::vector<Bytes>;
 
+        struct Value {
+            // data
+            DB::Enum::ColType type;
+            size_t type_size;
+            Bytes data;
+
+            // function
+            Value()= delete;
+            Value(Int i){
+                type = Enum::INT;
+                type_size = Const::INT_SIZE;
+                data.resize(Const::INT_SIZE);
+                std::memcpy(data.data(), &i, Const::INT_SIZE);
+            }
+            Value(Float f){
+                type = Enum::FLOAT;
+                type_size = Const::FLOAT_SIZE;
+                Bytes bytes(Const::FLOAT_SIZE);
+                std::memcpy(bytes.data(), &f, Const::FLOAT_SIZE);
+            }
+            Value(const String &str){
+                type = Enum::VARCHAR;
+                type_size = str.size();
+                data.insert(data.end(), str.begin(), str.end());
+            }
+            Value(const String &str, size_t len){
+                type = Enum::CHAR;
+                type_size = len;
+                data.resize(len);
+                std::memcpy(data.data(), str.data(), str.size());
+            }
+            Value(DB::Enum::ColType type, size_t type_size, Bytes data)
+                    :type(type), type_size(type_size), data(data){}
+
+            template <typename Func>
+            static auto value_op(const Value &value1, const Value &value2, Func op) {
+                using namespace Enum;
+                using namespace Const;
+                if (value1.type != value2.type) {
+                    throw std::runtime_error(
+                            fmt::format("Error: type {0} {1} can't call op function")
+                    );
+                }
+                switch (value1.type) {
+                    case INT:
+                        Int i1;
+                        Int i2;
+                        std::memcpy(&i1, value1.data.data(), value1.type_size);
+                        std::memcpy(&i2, value2.data.data(), value2.type_size);
+                        return op(i1, i2);
+                    case FLOAT:
+                        float f1;
+                        float f2;
+                        std::memcpy(&f1, value1.data.data(), value1.type_size);
+                        std::memcpy(&f2, value2.data.data(), value2.type_size);
+                        return op(f1, f2);
+                    case CHAR:
+                    case VARCHAR:
+                        std::string v1(value1.data.begin(), value1.data.end());
+                        std::string v2(value2.data.begin(), value2.data.end());
+                        return op(v1, v2);
+//                    default:
+//                        throw std::runtime_error("Error: Value type error");
+                }
+            }
+            template <typename Func>
+            auto value_op(Func op) {
+                using namespace Enum;
+                using namespace Const;
+                switch (type) {
+                    case INT:
+                        Int i;
+                        std::memcpy(&i, data.data(), type_size);
+                        return op(i);
+                    case FLOAT:
+                        float f;
+                        std::memcpy(&f, data.data(), type_size);
+                        return op(f);
+                    case CHAR:
+                    case VARCHAR:
+                        std::string v(data.begin(), data.end());
+                        return op(v);
+//                    default:
+//                        throw std::runtime_error("Error: Value type error");
+                }
+            }
+            // operator
+            friend bool operator<(const Value value1, const Value &value2) {
+                return value_op(value1, value2, [](auto v1, auto v2){ return v1<v2;});
+            }
+            friend bool operator==(const Value &value1, const Value &value2) {
+                return value_op(value1, value2, [](auto v1, auto v2){ return v1==v2;});
+            }
+            friend bool operator<=(const Value &value1, const Value &value2) {
+                return value1 < value2 || value1 == value2;
+            }
+            std::string get_string(){
+                return value_op([=](auto x){ return str_ret(x);});
+            }
+
+        private:
+            template <typename T>
+            std::string str_ret(T t){
+                return std::to_string(t);
+            }
+            std::string str_ret(const std::string &str) {
+                return str;
+            }
+        };
+
         struct TableProperty {
+            // Type
+            using ColProperty = std::map<std::string, std::pair<Enum::ColType, size_t>>;
             std::string table_name;
             std::string key;
-            std::map<std::string, std::pair<char, size_t>> col_property;
+            ColProperty col_property;
+            std::vector<std::string> col_name_lst;
 
             TableProperty(){}
             TableProperty(const std::string &table_name,
                           const std::string &key,
-                          const std::map<std::string, std::pair<char, size_t >> &col_property)
-                    :table_name(table_name), key(key),col_property(col_property){}
+                          const std::vector<std::string> col_name_lst,
+                          const ColProperty &col_property)
+                    :table_name(table_name), key(key), col_name_lst(col_name_lst), col_property(col_property){}
 
             size_t get_record_size()const;
         };

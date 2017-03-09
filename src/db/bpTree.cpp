@@ -58,7 +58,7 @@ void BpTree::write_info_block() {
 void BpTree::initialize() {
     // set node_key_count
     size_t size_len = sizeof(size_t);
-    size_t key_size = table_property.col_property.at(table_property.key).second;
+    size_t key_size = table_property.col_property.get_type_size(table_property.key);
     size_t Pos_len = sizeof(size_t);
     node_key_count = (DB::Const::BLOCK_SIZE-Pos_len-1-size_len)/(key_size+Pos_len);
     // read info block
@@ -133,7 +133,7 @@ BpTree::nodePtrType BpTree::read(DB::Type::Pos pos) const{
     ptr->is_leaf = block_data[0];
 
     // get pos list
-    size_t key_len = table_property.col_property.at(table_property.key).second;
+    size_t key_len = table_property.col_property.get_type_size(table_property.key);
     size_t item_len = key_len + sizeof(pos);
     size_t pos_lst_len;
     std::memcpy(&pos_lst_len, block_data.data()+1, sizeof(size_t));
@@ -143,9 +143,9 @@ BpTree::nodePtrType BpTree::read(DB::Type::Pos pos) const{
         auto item_beg = beg+(i*item_len);
         auto item_tem = item_beg+key_len;
         auto item_end = item_tem + sizeof(pos);
-        auto type_info = table_property.col_property.at(table_property.key);
+        auto type = table_property.col_property.get_col_type(table_property.key);
         Bytes key_data(item_beg, item_beg+key_len);
-        Value key(type_info.first, key_data);
+        Value key(type, key_data);
         Pos child_pos;
         std::memcpy(&child_pos, item_tem, sizeof(pos));
         auto item = std::make_pair(key, child_pos);
@@ -162,7 +162,7 @@ BpTree::nodePtrType BpTree::read(DB::Type::Pos pos) const{
 void BpTree::write(nodePtrType ptr) {
     using DB::Function::en_bytes;
     Bytes block_data(DB::Const::BLOCK_SIZE);
-    size_t key_len = table_property.col_property.at(table_property.key).second;
+    size_t key_len = table_property.col_property.get_type_size(table_property.key);
     size_t item_len = key_len + sizeof(size_t);
     size_t size_len = sizeof(size_t);
     size_t char_len = sizeof(char);

@@ -35,7 +35,7 @@ namespace DB {
     }
 
     namespace Type {
-        using Int = int64_t;
+        using Int = int32_t;
         using String = std::string;
         using Float = double;
         using Pos = size_t;

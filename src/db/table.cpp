@@ -5,6 +5,7 @@
 #include <map>
 #include <boost/filesystem.hpp>
 #include <utility>
+#include <functional>
 
 #include "bpTree.h"
 #include "table.h"
@@ -23,22 +24,46 @@ using DB::Enum::ColType;
 
 
 // SQL
-void Table::insert(const vector<std::string> &col_value_lst) {
-    auto values = str_lst_to_values(col_value_lst);
-    auto bytes = values_to_bytes(values);
+void Table::insert(const vector<Value> &col_value_lst) {
+    auto bytes = values_to_bytes(col_value_lst);
     BpTree bpTree(property);
-    bpTree.insert(get_col_value(property.key, values), bytes);
+    bpTree.insert(get_col_value(property.key, col_value_lst), bytes);
 }
 
 void Table::update(const std::string &col_name,
                    const std::string &op,
-                   const std::string &value) {
+                   const Value &value) {
 }
 
 void Table::remove(const std::string &col_name,
-                   const std::string &op,
-                   const std::string &value) {
+                   const std::string &predicate,
+                   const Value &value) {
+}
 
+void Table::find(const std::string &col_name,
+                 const std::string &predicate,
+                 const DB::Type::Value &value) {
+}
+
+std::function<bool(Value, Value)> Table::make_predicate_func(const std::string &predicate) {
+    std::map<std::string, std::function<bool(Value, Value)>> predicate_map{
+            {"<", [](Value v1, Value v2){ return v1 < v2;}},
+            {"=", [](Value v1, Value v2){ return v1 == v2;}},
+            {">", [](Value v1, Value v2){ return v2 < v1;}},
+            {"<=", [](Value v1, Value v2){ return v1 <= v2;}},
+            {">=", [](Value v1, Value v2){ return !(v1 < v2);}}
+    };
+    return predicate_map.at(predicate);
+}
+
+std::function<Value(Value, Value)> Table::make_op_func(const std::string &op) {
+    std::map<std::string, std::function<Value(Value, Value)>> op_map{
+            {"+", [](Value v1, Value v2){ return v1 + v2;}},
+            {"-", [](Value v1, Value v2){ return v1 - v2;}},
+            {"*", [](Value v1, Value v2){ return v2 * v1;}},
+            {"/", [](Value v1, Value v2){ return v2 / v1;}}
+    };
+    return op_map.at(op);
 }
 
 void Table::create_table(const DB::Type::TableProperty &property) {
@@ -147,19 +172,6 @@ void Table::write_meta_data(const DB::Type::TableProperty &property) {
 }
 
 // ========= tuple_lst =========
-std::vector<DB::Type::Value> Table::str_lst_to_values(const std::vector<std::string> &str_lst) {
-    if (str_lst.size() != property.col_property.tuple_lst.size()) {
-        throw std::runtime_error("Error: col str_lst count error");
-    }
-    std::vector<Value> values;
-    auto tuple_lst = property.col_property.tuple_lst;
-    for (int i = 0; i < property.col_property.tuple_lst.size(); ++i) {
-        ColType col_type = tuple_lst[i].col_type;
-        values.push_back(Value::str_to_value(col_type, str_lst[i]));
-    }
-    return values;
-}
-
 DB::Type::Bytes Table::values_to_bytes(const std::vector<DB::Type::Value> &values) {
     Bytes bytes;
     for (auto &&v : values) {

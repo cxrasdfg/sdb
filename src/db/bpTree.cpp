@@ -274,24 +274,57 @@ bool BpTree::is_node_less(nodePtrType ptr)const{
     return (node_key_count/2) > ptr->pos_lst.size();
 }
 
-Bytes BpTree::find_r(const Value &key, nodePtrType ptr) const{
-    bool is_leaf = ptr->is_leaf;
+// ========== Query ===========
+BpTree::PosList BpTree::find(const Value &key) const{
+    nodePtrType ptr = read(root_pos);
     if (ptr == nullptr){
-        throw_error("Error: can't fount key");
+        throw_error("Error: bpTree is empty!");
     }
-    for (auto &x: ptr->pos_lst) {
-        if (key == x.first && is_leaf){
-            Record record(table_property);
-            PosList pos_lst;
-            pos_lst.push_back(x.second);
-            return record.read_record(pos_lst)[0];
-        } else if (!is_leaf && key <= x.first){
-            return find_r(key, read(x.second));
-        } else if (key < x.first && is_leaf) {
-            break;
+    while (ptr != nullptr) {
+        bool is_leaf = ptr->is_leaf;
+        bool is_for_end = true;
+        for (auto &&x: ptr->pos_lst) {
+            if (key == x.first && is_leaf){
+                PosList pos_lst;
+                pos_lst.push_back(x.second);
+                return pos_lst;
+            } else if (!is_leaf && key <= x.first){
+                ptr = read(x.second);
+                is_for_end = false;
+                break;
+            } else if (key < x.first && is_leaf) {
+                break;
+            }
+        }
+        if (is_for_end) {
+            throw_error("Error: can't fount key");
         }
     }
-    throw_error("Error: can't fount key");
+}
+
+PosList BpTree::find(const Value &beg, const Value &end) const {
+    PosList pos_lst;
+    nodePtrType beg_ptr = find_near_key_node(beg);
+    nodePtrType end_ptr = find_near_key_node(end);
+    auto beg_iter = get_pos_lst_iter(beg, beg_ptr->pos_lst);
+    auto end_iter = get_pos_lst_iter(end, beg_ptr->pos_lst);
+    // lambda function
+    auto pos_lst_insert = [](auto &&lst, auto b, auto e){
+        for (auto it = b; it != e; ++it) {
+            lst.push_back(b->second);
+        }
+    };
+    if (beg_ptr == end_ptr) {
+        pos_lst_insert(pos_lst, beg_iter, end_iter);
+        return pos_lst;
+    }
+    pos_lst_insert(pos_lst, beg_iter, beg_ptr->pos_lst.end());
+    pos_lst_insert(pos_lst, end_ptr->pos_lst.begin(), end_iter);
+    nodePtrType ptr = read(beg_ptr->end_pos);
+    while (ptr != end_ptr) {
+        pos_lst_insert(pos_lst, ptr->pos_lst.begin(), ptr->pos_lst.end());
+    }
+    return pos_lst;
 }
 
 BpTree::nodePtrType BpTree::insert_r(const Value &key, const Bytes &data, nodePtrType ptr) {
@@ -384,3 +417,38 @@ bool BpTree::remove_r(const Value &key, nodePtrType &ptr) {
     return is_node_less(ptr);
 }
 
+BpTree::nodePtrType BpTree::find_near_key_node(const Value &key)const {
+    nodePtrType ptr = read(root_pos);
+    if (ptr == nullptr){
+        throw_error("Error: bpTree is empty!");
+    }
+    while (ptr != nullptr) {
+        bool is_leaf = ptr->is_leaf;
+        bool is_for_end = true;
+        for (auto &&x: ptr->pos_lst) {
+            if (key <= x.first && is_leaf){
+                return ptr;
+            } else if (!is_leaf && key <= x.first) {
+                ptr = read(x.second);
+                is_for_end = false;
+                break;
+            }
+        }
+        if (is_for_end){
+            if (is_leaf) {
+                return ptr;
+            }
+            ptr = read(std::prev(ptr->pos_lst.end())->second);
+        }
+    }
+}
+
+BpTree::nodePosLstType::const_iterator
+BpTree::get_pos_lst_iter(const Value &key, const nodePosLstType &pos_lst) const {
+    for (auto iter = pos_lst.cbegin(); iter != pos_lst.cend(); ++iter) {
+        if (key <= iter->first) {
+            return iter;
+        }
+    }
+    return pos_lst.end();
+}

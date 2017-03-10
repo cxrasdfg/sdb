@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string>
 #include <boost/variant.hpp>
+#include <functional>
 
 #include "util.h"
 #include "io.h"
@@ -51,6 +52,7 @@ public:
     using Value = DB::Type::Value;
     using Bytes = DB::Type::Bytes;
     using Pos = DB::Type::Pos;
+    using PosList = DB::Type::PosList;
     using nodePtrType = std::shared_ptr<BptNode>;
     using nodePosLstType = typename BptNode::PoslstType;
 //    using nodeLstItemType = typename BptNode<Value, Bytes>::lstItemType;
@@ -71,7 +73,9 @@ public:
     void remove(const Value &key);
     nodePtrType read(DB::Type::Pos pos) const;
     void write(nodePtrType ptr);
-    Bytes find(const Value &key)const{return find_r(key, read(root_pos));}
+    PosList find(const Value &key)const;
+    PosList find(const Value &mid, bool is_less)const;
+    PosList find(const Value &beg, const Value &end)const;
     void print()const;
 
 private:
@@ -94,7 +98,10 @@ private:
     nodePtrType insert_r(const Value &key, const Bytes &data, nodePtrType ptr);
     // 递归删除
     bool remove_r(const Value &key, nodePtrType &ptr);
-    Bytes find_r(const Value &key, nodePtrType ptr) const;
+    // find_near_key_node
+    nodePtrType find_near_key_node(const Value &key)const;
+    std::list<std::pair<DB::Type::Value, unsigned long>>::const_iterator get_pos_lst_iter(const Value &key,
+                                                                                          const nodePosLstType &pos_lst) const;
     // === 异常处理 ===
     void throw_error(const std::string &str)const{
         throw std::runtime_error(str);

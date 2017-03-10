@@ -37,7 +37,7 @@ namespace DB {
     namespace Type {
         using Int = int32_t;
         using String = std::string;
-        using Float = double;
+        using Float = float;
         using Pos = size_t;
         using PosList = std::vector<Pos>;
         using Byte = char;
@@ -82,29 +82,32 @@ namespace DB {
                         std::string v1(value1.data.begin(), value1.data.end());
                         std::string v2(value2.data.begin(), value2.data.end());
                         return op(v1, v2);
-//                    default:
-//                        throw std::runtime_error("Error: Value type error");
                 }
             }
             template <typename Func>
-            auto value_op(const Value &value, Func op) {
+            static auto number_value_op(const Value &value1, const Value &value2, Func op) {
                 using namespace Enum;
                 using namespace Const;
-                switch (value.type) {
+                if (value1.type != value2.type) {
+                    throw std::runtime_error(
+                            fmt::format("Error: type {0} {1} can't call op function")
+                    );
+                }
+                switch (value1.type) {
                     case INT:
-                        Int i;
-                        std::memcpy(&i, value.data.data(), Const::INT_SIZE);
-                        return op(i);
+                        Int i1;
+                        Int i2;
+                        std::memcpy(&i1, value1.data.data(), Const::INT_SIZE);
+                        std::memcpy(&i2, value2.data.data(), Const::INT_SIZE);
+                        return op(i1, i2);
                     case FLOAT:
-                        float f;
-                        std::memcpy(&f, value.data.data(), Const::FLOAT_SIZE);
-                        return op(f);
-                    case CHAR:
-                    case VARCHAR:
-                        std::string v(value.data.begin(), value.data.end());
-                        return op(v);
-//                    default:
-//                        throw std::runtime_error("Error: Value type error");
+                        float f1;
+                        float f2;
+                        std::memcpy(&f1, value1.data.data(), Const::FLOAT_SIZE);
+                        std::memcpy(&f2, value2.data.data(), Const::FLOAT_SIZE);
+                        return op(f1, f2);
+                    default:
+                        throw std::runtime_error("Error: type must be number type!");
                 }
             }
             template <typename Func>
@@ -124,8 +127,6 @@ namespace DB {
                     case VARCHAR:
                         std::string v(data.begin(), data.end());
                         return op(v);
-//                    default:
-//                        throw std::runtime_error("Error: Value type error");
                 }
             }
 
@@ -152,6 +153,26 @@ namespace DB {
             }
             friend bool operator<=(const Value &value1, const Value &value2) {
                 return value1 < value2 || value1 == value2;
+            }
+            friend Value operator+(const Value &value1, const Value &value2) {
+                return number_value_op(value1, value2, [=](auto x, auto y){
+                    return make(value1.type, x+y);
+                });
+            }
+            friend Value operator-(const Value &value1, const Value &value2) {
+                return number_value_op(value1, value2, [=](auto x, auto y){
+                    return make(value1.type, x-y);
+                });
+            }
+            friend Value operator*(const Value &value1, const Value &value2) {
+                return number_value_op(value1, value2, [=](auto x, auto y){
+                    return make(value1.type, x*y);
+                });
+            }
+            friend Value operator/(const Value &value1, const Value &value2) {
+                return number_value_op(value1, value2, [=](auto x, auto y){
+                    return make(value1.type, x/y);
+                });
             }
 
             //

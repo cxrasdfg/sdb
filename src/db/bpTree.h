@@ -100,8 +100,9 @@ private:
     bool remove_r(const Value &key, nodePtrType &ptr);
     // find_near_key_node
     nodePtrType find_near_key_node(const Value &key)const;
-    nodePosLstType::const_iterator get_pos_lst_iter(const Value &key,
-                                                    const nodePosLstType &pos_lst) const;
+    nodePosLstType::const_iterator get_pos_lst_iter(const Value &key, const nodePosLstType &pos_lst) const;
+    nodePtrType get_leaf_begin_node()const;
+    nodePtrType get_leaf_end_node()const;
     // === 异常处理 ===
     void throw_error(const std::string &str)const{
         throw std::runtime_error(str);

@@ -304,18 +304,20 @@ PosList BpTree::find(const Value &beg, const Value &end) const {
     PosList pos_lst;
     nodePtrType beg_ptr = find_near_key_node(beg);
     nodePtrType end_ptr = find_near_key_node(end);
-    auto beg_iter = get_pos_lst_iter(beg, beg_ptr->pos_lst);
-    auto end_iter = get_pos_lst_iter(end, end_ptr->pos_lst);
     // lambda function
     auto pos_lst_insert = [](auto &&lst, auto b, auto e){
         for (auto it = b; it != e; ++it) {
             lst.push_back(it->second);
         }
     };
-    if (beg_ptr == end_ptr) {
+    if (beg_ptr->file_pos == end_ptr->file_pos) {
+        auto beg_iter = get_pos_lst_iter(beg, beg_ptr->pos_lst);
+        auto end_iter = get_pos_lst_iter(end, beg_ptr->pos_lst);
         pos_lst_insert(pos_lst, beg_iter, end_iter);
         return pos_lst;
     }
+    auto beg_iter = get_pos_lst_iter(beg, beg_ptr->pos_lst);
+    auto end_iter = get_pos_lst_iter(end, end_ptr->pos_lst);
     pos_lst_insert(pos_lst, beg_iter, beg_ptr->pos_lst.end());
     pos_lst_insert(pos_lst, end_ptr->pos_lst.begin(), end_iter);
     nodePtrType ptr = read(beg_ptr->end_pos);
@@ -324,6 +326,14 @@ PosList BpTree::find(const Value &beg, const Value &end) const {
         ptr = read(ptr->end_pos);
     }
     return pos_lst;
+}
+
+PosList BpTree::find(const Value &mid, bool is_less) const {
+    if (is_less) {
+        return find(get_leaf_begin_node()->pos_lst.begin()->first, mid);
+    } else {
+        return find(mid, std::prev(get_leaf_end_node()->pos_lst.end())->first);
+    }
 }
 
 BpTree::nodePtrType BpTree::insert_r(const Value &key, const Bytes &data, nodePtrType ptr) {
@@ -448,4 +458,27 @@ BpTree::get_pos_lst_iter(const Value &key, const nodePosLstType &pos_lst) const 
         }
     }
     return pos_lst.end();
+}
+
+BpTree::nodePtrType BpTree::get_leaf_begin_node()const{
+    nodePtrType ptr = read(root_pos);
+    if (ptr == nullptr) {
+        throw std::runtime_error("Error: Empty bpTree!");
+    }
+    while (!ptr->is_leaf) {
+        ptr = read(ptr->pos_lst.begin()->second);
+    }
+    return ptr;
+}
+
+BpTree::nodePtrType BpTree::get_leaf_end_node()const{
+    nodePtrType ptr = read(root_pos);
+    if (ptr == nullptr) {
+        throw std::runtime_error("Error: Empty bpTree!");
+    }
+    while (!ptr->is_leaf) {
+        Pos pos = std::prev(ptr->pos_lst.end())->second;
+        ptr = read(pos);
+    }
+    return ptr;
 }

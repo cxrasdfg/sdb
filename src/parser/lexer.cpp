@@ -23,10 +23,6 @@ const Lexer &Lexer::operator=(const Lexer &lexer){
     return *this;
 }
 
-const Lexer &Lexer::operator=(Lexer &&lexer){
-    return lexer;
-}
-
 bool Lexer::is_punctuation_char(char ch){
     auto char_set = cfg.get_punctuation_set();
     return char_set.find(ch) != char_set.end();

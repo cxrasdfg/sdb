@@ -15,9 +15,7 @@ class Lexer{
 public:
     Lexer(){}
     Lexer(const Lexer &lexer){*this=lexer;}
-    Lexer(Lexer &&lexer){*this=lexer;}
     const Lexer &operator=(const Lexer &lexer);
-    const Lexer &operator=(Lexer &&lexer);
 
     // special set
     bool is_punctuation_char(char ch);

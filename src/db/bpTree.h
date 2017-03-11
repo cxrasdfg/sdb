@@ -100,8 +100,8 @@ private:
     bool remove_r(const Value &key, nodePtrType &ptr);
     // find_near_key_node
     nodePtrType find_near_key_node(const Value &key)const;
-    std::list<std::pair<DB::Type::Value, unsigned long>>::const_iterator get_pos_lst_iter(const Value &key,
-                                                                                          const nodePosLstType &pos_lst) const;
+    nodePosLstType::const_iterator get_pos_lst_iter(const Value &key,
+                                                    const nodePosLstType &pos_lst) const;
     // === 异常处理 ===
     void throw_error(const std::string &str)const{
         throw std::runtime_error(str);

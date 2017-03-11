@@ -91,12 +91,11 @@ void BpTree::insert(const Value &key, const Bytes &data){
         root_pos = new_root->file_pos;
         return;
     }
-    nodePtrType left_ptr = insert_r(key, data, root);
-    if (left_ptr){
-        write(left_ptr);
+    nodePtrType right_ptr = insert_r(key, data, root);
+    if (right_ptr){
         auto new_root = std::make_shared<BptNode>();
-        new_root->pos_lst.push_back(std::make_pair(left_ptr->last_key(), left_ptr->file_pos));
         new_root->pos_lst.push_back(std::make_pair(root->last_key(), root->file_pos));
+        new_root->pos_lst.push_back(std::make_pair(right_ptr->last_key(), right_ptr->file_pos));
         new_root->is_leaf = false;
         write(new_root);
         root_pos = new_root->file_pos;
@@ -237,32 +236,31 @@ void BpTree::print()const{
 
 // ---------- BpTree Private Function ---------
 BpTree::nodePtrType BpTree::node_split(nodePtrType &ptr) {
-    auto left_lst_ptr = std::make_shared<nodePosLstType>();
-    left_lst_ptr->splice(left_lst_ptr->begin(), ptr->pos_lst,
-                         ptr->pos_lst.begin(), std::next(ptr->pos_lst.begin(), ptr->pos_lst.size()/2));
-    auto left_node_ptr = std::make_shared<BptNode>();
-    left_node_ptr->pos_lst= *left_lst_ptr;
+    auto right_node_ptr = std::make_shared<BptNode>();
+    auto &right_lst = right_node_ptr->pos_lst;
+    right_lst.splice(right_lst.end(), ptr->pos_lst,
+                     std::next(ptr->pos_lst.begin(), ptr->pos_lst.size()/2), ptr->pos_lst.end());
+    right_node_ptr->is_leaf = ptr->is_leaf;
+    right_node_ptr->end_pos = ptr->end_pos;
+    write(right_node_ptr);
     if (ptr->is_leaf){
-        left_node_ptr->end_pos = ptr->file_pos;
+        ptr->end_pos = right_node_ptr->file_pos;
     }
-    left_node_ptr->is_leaf = ptr->is_leaf;
     write(ptr);
-    return left_node_ptr;
+    return right_node_ptr;
 }
 
 bool BpTree::node_merge(nodePtrType &ptr_1, nodePtrType &ptr_2) {
-    ptr_2->pos_lst.splice(ptr_2->pos_lst.begin(), ptr_1->pos_lst);
-    if (ptr_2->pos_lst.size() > node_key_count){
-        auto left_ptr = node_split(ptr_2);
-        left_ptr->file_pos = ptr_1->file_pos;
-        left_ptr->is_new_node = false;
-        ptr_1 = left_ptr;
+    ptr_1->pos_lst.splice(ptr_1->pos_lst.end(), ptr_2->pos_lst);
+    if (ptr_1->pos_lst.size() > node_key_count){
+        auto right_ptr = node_split(ptr_1);
+        free_pos_list.push_back(ptr_2->file_pos);
+        right_ptr->end_pos = ptr_2->end_pos;
+        ptr_2 = right_ptr;
         write(ptr_1);
         write(ptr_2);
         return false;
     } else {
-        ptr_1->pos_lst = std::move(ptr_2->pos_lst);
-        ptr_1->end_pos = ptr_2->end_pos;
         write(ptr_1);
         free_pos_list.push_back(ptr_2->file_pos);
         ptr_2 = nullptr;
@@ -307,11 +305,11 @@ PosList BpTree::find(const Value &beg, const Value &end) const {
     nodePtrType beg_ptr = find_near_key_node(beg);
     nodePtrType end_ptr = find_near_key_node(end);
     auto beg_iter = get_pos_lst_iter(beg, beg_ptr->pos_lst);
-    auto end_iter = get_pos_lst_iter(end, beg_ptr->pos_lst);
+    auto end_iter = get_pos_lst_iter(end, end_ptr->pos_lst);
     // lambda function
     auto pos_lst_insert = [](auto &&lst, auto b, auto e){
         for (auto it = b; it != e; ++it) {
-            lst.push_back(b->second);
+            lst.push_back(it->second);
         }
     };
     if (beg_ptr == end_ptr) {
@@ -321,8 +319,9 @@ PosList BpTree::find(const Value &beg, const Value &end) const {
     pos_lst_insert(pos_lst, beg_iter, beg_ptr->pos_lst.end());
     pos_lst_insert(pos_lst, end_ptr->pos_lst.begin(), end_iter);
     nodePtrType ptr = read(beg_ptr->end_pos);
-    while (ptr != end_ptr) {
+    while (ptr->file_pos != end_ptr->file_pos) {
         pos_lst_insert(pos_lst, ptr->pos_lst.begin(), ptr->pos_lst.end());
+        ptr = read(ptr->end_pos);
     }
     return pos_lst;
 }
@@ -340,10 +339,10 @@ BpTree::nodePtrType BpTree::insert_r(const Value &key, const Bytes &data, nodePt
                 ptr->pos_lst.insert(iter, std::make_pair(key, record_pos));
             } else {
                 auto node = read(iter->second);
-                auto left_ptr = insert_r(key, data, node);
-                if (left_ptr){
-                    write(left_ptr);
-                    ptr->pos_lst.insert(iter, std::make_pair(left_ptr->last_key(), left_ptr->file_pos));
+                auto right_ptr = insert_r(key, data, node);
+                iter->first = node->last_key();
+                if (right_ptr){
+                    ptr->pos_lst.insert(std::next(iter), std::make_pair(right_ptr->last_key(), right_ptr->file_pos));
                 }
             }
             is_for_end = false;
@@ -351,19 +350,17 @@ BpTree::nodePtrType BpTree::insert_r(const Value &key, const Bytes &data, nodePt
         }
     }
     if (is_for_end) {
-        auto lst_end_ptr = std::prev(ptr->pos_lst.end());
         if (is_leaf){
             Record record(table_property);
             Pos record_pos = record.insert_record(data);
             ptr->pos_lst.insert(ptr->pos_lst.end(), std::make_pair(key, record_pos));
         } else {
-            auto node = read(lst_end_ptr->second);
-            auto left_ptr = insert_r(key, data, node);
-            if (left_ptr){
-                write(left_ptr);
-                ptr->pos_lst.insert(lst_end_ptr, std::make_pair(left_ptr->last_key(), left_ptr->file_pos));
+            auto last_node_ptr = read(std::prev(ptr->pos_lst.end())->second);
+            auto right_ptr = insert_r(key, data, last_node_ptr);
+            std::prev(ptr->pos_lst.end())->first = last_node_ptr->last_key();
+            if (right_ptr){
+                ptr->pos_lst.insert(ptr->pos_lst.end(), std::make_pair(right_ptr->last_key(), right_ptr->file_pos));
             }
-            lst_end_ptr->first = key;
         }
     }
     write(ptr);
@@ -426,9 +423,9 @@ BpTree::nodePtrType BpTree::find_near_key_node(const Value &key)const {
         bool is_leaf = ptr->is_leaf;
         bool is_for_end = true;
         for (auto &&x: ptr->pos_lst) {
-            if (key <= x.first && is_leaf){
+            if (is_leaf){
                 return ptr;
-            } else if (!is_leaf && key <= x.first) {
+            } else if (key <= x.first) {
                 ptr = read(x.second);
                 is_for_end = false;
                 break;

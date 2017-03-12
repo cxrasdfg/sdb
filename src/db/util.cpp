@@ -15,31 +15,31 @@ namespace DB {
                     return make(col_type, str);
             }
         }
-        // ========== ColProperty =========
-        Enum::ColType ColProperty::get_col_type(const std::string &col_name)const {
-            return get_tuple(col_name).col_type;
+        // ========== TupleProperty =========
+        Enum::ColType TupleProperty::get_col_type(const std::string &col_name)const {
+            return get_col_property(col_name).col_type;
         }
-        size_t ColProperty::get_type_size(const std::string &col_name)const {
-            return get_tuple(col_name).type_size;
+        size_t TupleProperty::get_type_size(const std::string &col_name)const {
+            return get_col_property(col_name).type_size;
         }
-        ColProperty::Tuple ColProperty::get_tuple(const std::string &col_name)const {
-            for (auto &&tuple : tuple_lst) {
+        TupleProperty::ColProperty TupleProperty::get_col_property(const std::string &col_name)const {
+            for (auto &&tuple : property_lst) {
                 if (tuple.col_name == col_name) {
                     return tuple;
                 }
             }
             throw std::runtime_error(
-                    std::string("Error: get_tuple can't found col name{")+col_name+"}!"
+                    std::string("Error: get_col_property can't found col name{")+col_name+"}!"
             );
         }
-        void ColProperty::push_back(const std::string &col_name, Enum::ColType col_type, size_t type_size) {
-            tuple_lst.push_back(Tuple(col_name, col_type, type_size));
+        void TupleProperty::push_back(const std::string &col_name, Enum::ColType col_type, size_t type_size) {
+            property_lst.push_back(ColProperty(col_name, col_type, type_size));
         }
 
         // ========== TableProperty =========
         size_t TableProperty::get_record_size() const {
             size_t total_size = 0;
-            for (auto &&item : col_property.tuple_lst) {
+            for (auto &&item : tuple_property.property_lst) {
                 total_size += item.type_size;
             }
             return total_size;

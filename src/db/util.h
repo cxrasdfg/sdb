@@ -20,7 +20,6 @@ namespace DB {
             INT,
             // float
             FLOAT,
-            CHAR,
             VARCHAR
         };
     }
@@ -77,7 +76,6 @@ namespace DB {
                         std::memcpy(&f1, value1.data.data(), Const::FLOAT_SIZE);
                         std::memcpy(&f2, value2.data.data(), Const::FLOAT_SIZE);
                         return op(f1, f2);
-                    case CHAR:
                     case VARCHAR:
                         std::string v1(value1.data.begin(), value1.data.end());
                         std::string v2(value2.data.begin(), value2.data.end());
@@ -123,7 +121,6 @@ namespace DB {
                         float f;
                         std::memcpy(&f, data.data(), Const::FLOAT_SIZE);
                         return op(f);
-                    case CHAR:
                     case VARCHAR:
                         std::string v(data.begin(), data.end());
                         return op(v);
@@ -139,6 +136,10 @@ namespace DB {
                 return Value(col_type, bytes);
             }
             static Value make(Enum::ColType col_type, std::string data) {
+                Bytes bytes(data.begin(), data.end());
+                return Value(col_type, bytes);
+            }
+            static Value make(Enum::ColType col_type, Bytes data) {
                 Bytes bytes(data.begin(), data.end());
                 return Value(col_type, bytes);
             }
@@ -179,6 +180,12 @@ namespace DB {
             std::string get_string(){
                 return value_op([=](auto x){ return str_ret(x);});
             }
+            static bool is_var_type(Enum::ColType col_type){
+                return col_type == Enum::VARCHAR;
+            }
+            bool is_var_type()const{
+                return is_var_type(type);
+            }
 
         private:
             template <typename T> std::string str_ret(T t){
@@ -189,22 +196,22 @@ namespace DB {
             }
         };
 
-        struct ColProperty{
+        struct TupleProperty{
             // type
-            struct Tuple {
-                Tuple(const std::string &col_name, Enum::ColType col_type, size_t type_size)
+            struct ColProperty {
+                ColProperty(const std::string &col_name, Enum::ColType col_type, size_t type_size)
                         :col_name(col_name), col_type(col_type), type_size(type_size){}
                 std::string col_name;
                 Enum::ColType col_type;
                 size_t type_size;
             };
             // data member
-            std::vector<Tuple> tuple_lst;
+            std::vector<ColProperty> property_lst;
 
             // function
             Enum::ColType get_col_type(const std::string &col_name)const;
             size_t get_type_size(const std::string &col_name)const;
-            Tuple get_tuple(const std::string &col_name)const;
+            ColProperty get_col_property(const std::string &col_name)const;
             void push_back(const std::string &col_name, Enum::ColType col_type, size_t type_size);
         };
 
@@ -212,15 +219,29 @@ namespace DB {
             // Type
             std::string table_name;
             std::string key;
-            ColProperty col_property;
+            TupleProperty tuple_property;
 
             TableProperty(){}
             TableProperty(const std::string &table_name,
                           const std::string &key,
-                          const ColProperty &col_property)
-                    :table_name(table_name), key(key), col_property(col_property){}
+                          const TupleProperty &col_property)
+                    :table_name(table_name), key(key), tuple_property(col_property){}
 
             size_t get_record_size()const;
+        };
+
+        struct Tuple {
+            std::vector<Value> value_lst;
+
+            Tuple()= default;
+            Tuple(const std::vector<Value> &tuple):value_lst(tuple){}
+        };
+
+        struct TupleLst {
+            std::vector<Tuple> tuple_lst;
+
+            TupleLst()= default;
+            TupleLst(const std::vector<Tuple> &tuple_lst):tuple_lst(tuple_lst){}
         };
     }
 
@@ -237,6 +258,19 @@ namespace DB {
                 std::cout << item;
             }
             std::cout << std::endl;
+        }
+
+        inline size_t get_type_len(Enum::ColType col_type) {
+            using namespace Enum;
+            using namespace Const;
+            switch (col_type) {
+                case INT:
+                    return INT_SIZE;
+                case FLOAT:
+                    return FLOAT_SIZE;
+                default:
+                    throw std::runtime_error("Error: [get_type_len] type must be non-variable type");
+            }
         }
     }
 

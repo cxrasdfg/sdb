@@ -76,6 +76,7 @@ public:
     PosList find(const Value &key)const;
     PosList find(const Value &mid, bool is_less)const;
     PosList find(const Value &beg, const Value &end)const;
+    PosList find(std::function<bool(Value)> predicate) const;
     void print()const;
 
 private:
@@ -103,6 +104,13 @@ private:
     nodePosLstType::const_iterator get_pos_lst_iter(const Value &key, const nodePosLstType &pos_lst) const;
     nodePtrType get_leaf_begin_node()const;
     nodePtrType get_leaf_end_node()const;
+    void pos_lst_insert(PosList &pos_lst,
+                        nodePosLstType::const_iterator beg_iter,
+                        nodePosLstType::const_iterator end_iter)const;
+    void pos_lst_insert(PosList &pos_lst,
+                        nodePosLstType::const_iterator beg_iter,
+                        nodePosLstType::const_iterator end_iter,
+                        std::function<bool(Value)> predicate)const;
     // === 异常处理 ===
     void throw_error(const std::string &str)const{
         throw std::runtime_error(str);

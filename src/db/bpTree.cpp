@@ -58,7 +58,7 @@ void BpTree::write_info_block() {
 void BpTree::initialize() {
     // set node_key_count
     size_t size_len = sizeof(size_t);
-    size_t key_size = table_property.col_property.get_type_size(table_property.key);
+    size_t key_size = table_property.tuple_property.get_type_size(table_property.key);
     size_t Pos_len = sizeof(size_t);
     node_key_count = (DB::Const::BLOCK_SIZE-Pos_len-1-size_len)/(key_size+Pos_len);
     // read info block
@@ -132,7 +132,7 @@ BpTree::nodePtrType BpTree::read(DB::Type::Pos pos) const{
     ptr->is_leaf = block_data[0];
 
     // get pos list
-    size_t key_len = table_property.col_property.get_type_size(table_property.key);
+    size_t key_len = table_property.tuple_property.get_type_size(table_property.key);
     size_t item_len = key_len + sizeof(pos);
     size_t pos_lst_len;
     std::memcpy(&pos_lst_len, block_data.data()+1, sizeof(size_t));
@@ -142,7 +142,7 @@ BpTree::nodePtrType BpTree::read(DB::Type::Pos pos) const{
         auto item_beg = beg+(i*item_len);
         auto item_tem = item_beg+key_len;
         auto item_end = item_tem + sizeof(pos);
-        auto type = table_property.col_property.get_col_type(table_property.key);
+        auto type = table_property.tuple_property.get_col_type(table_property.key);
         Bytes key_data(item_beg, item_beg+key_len);
         Value key(type, key_data);
         Pos child_pos;
@@ -161,7 +161,7 @@ BpTree::nodePtrType BpTree::read(DB::Type::Pos pos) const{
 void BpTree::write(nodePtrType ptr) {
     using DB::Function::en_bytes;
     Bytes block_data(DB::Const::BLOCK_SIZE);
-    size_t key_len = table_property.col_property.get_type_size(table_property.key);
+    size_t key_len = table_property.tuple_property.get_type_size(table_property.key);
     size_t item_len = key_len + sizeof(size_t);
     size_t size_len = sizeof(size_t);
     size_t char_len = sizeof(char);
@@ -304,12 +304,6 @@ PosList BpTree::find(const Value &beg, const Value &end) const {
     PosList pos_lst;
     nodePtrType beg_ptr = find_near_key_node(beg);
     nodePtrType end_ptr = find_near_key_node(end);
-    // lambda function
-    auto pos_lst_insert = [](auto &&lst, auto b, auto e){
-        for (auto it = b; it != e; ++it) {
-            lst.push_back(it->second);
-        }
-    };
     if (beg_ptr->file_pos == end_ptr->file_pos) {
         auto beg_iter = get_pos_lst_iter(beg, beg_ptr->pos_lst);
         auto end_iter = get_pos_lst_iter(end, beg_ptr->pos_lst);
@@ -334,6 +328,18 @@ PosList BpTree::find(const Value &mid, bool is_less) const {
     } else {
         return find(mid, std::prev(get_leaf_end_node()->pos_lst.end())->first);
     }
+}
+
+PosList BpTree::find(std::function<bool(Value)> predicate) const {
+    nodePtrType beg_ptr = get_leaf_begin_node();
+    nodePtrType end_ptr = get_leaf_end_node();
+    nodePtrType ptr = beg_ptr;
+    PosList pos_lst;
+    while (ptr->file_pos != end_ptr->file_pos) {
+        pos_lst_insert(pos_lst, ptr->pos_lst.begin(), ptr->pos_lst.end(), predicate);
+    }
+    pos_lst_insert(pos_lst, end_ptr->pos_lst.begin(), end_ptr->pos_lst.end(), predicate);
+    return pos_lst;
 }
 
 BpTree::nodePtrType BpTree::insert_r(const Value &key, const Bytes &data, nodePtrType ptr) {
@@ -481,4 +487,23 @@ BpTree::nodePtrType BpTree::get_leaf_end_node()const{
         ptr = read(pos);
     }
     return ptr;
+}
+
+void BpTree::pos_lst_insert(PosList &pos_lst,
+                            nodePosLstType::const_iterator beg_iter,
+                            nodePosLstType::const_iterator end_iter) const{
+    for (auto it = beg_iter; it != end_iter; ++it) {
+        pos_lst.push_back(it->second);
+    }
+}
+
+void BpTree::pos_lst_insert(PosList &pos_lst,
+                            nodePosLstType::const_iterator beg_iter,
+                            nodePosLstType::const_iterator end_iter,
+                            std::function<bool(Value)> predicate) const {
+    for (auto it = beg_iter; it != end_iter; ++it) {
+        if (predicate(it->first)) {
+            pos_lst.push_back(it->second);
+        }
+    }
 }

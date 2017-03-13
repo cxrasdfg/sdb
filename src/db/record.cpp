@@ -53,10 +53,6 @@ Record::TupleLst Record::read_record(size_t block_num) {
             throw std::runtime_error("Error: [read_record] offset error");
         }
         auto iter = free_pos_lst.find(block_num*BLOCK_SIZE+offset);
-//        std::cout << offset << std::endl;
-//        if (offset == 372) {
-//            std::cout << offset << std::endl;
-//        }
         if (iter == free_pos_lst.end()) {
             Tuple tuple = bytes_to_tuple(property, bytes.data(), offset);
             tuple_lst.tuple_lst.push_back(tuple);
@@ -85,10 +81,10 @@ void Record::remove_record(DB::Type::Pos pos) {
     IO io(record_path);
     size_t block_num = pos / BLOCK_SIZE;
     Bytes bytes = io.read_block(block_num);
-    size_t offset = pos;
+    size_t start = pos % BLOCK_SIZE;
+    size_t offset = pos % BLOCK_SIZE;
     bytes_to_tuple(property, bytes.data(), offset);
-    std::cout << offset-pos << std::endl;
-    free_pos_lst[pos] = offset - pos;
+    free_pos_lst[pos] = offset - start;
 }
 
 Record::TupleLst Record::find(const std::string &col_name, std::function<bool(Value)> predicate) {

@@ -19,7 +19,7 @@ using DB::Type::Pos;
 using DB::Const::BLOCK_SIZE;
 using DB::Const::INT_SIZE;
 using DB::Type::Value;
-using DB::Type::ColProperty;
+using DB::Type::TupleProperty;
 using DB::Type::TableProperty;
 using DB::Enum::ColType;
 using DB::Type::Int;
@@ -29,6 +29,7 @@ void bpt_test();
 void io_test();
 void table_init_test();
 void table_test();
+void record_test();
 
 int main(void) {
     clock_t start = clock();
@@ -37,17 +38,18 @@ int main(void) {
     table_init_test();
 //    table_test();
     bpt_test();
+//    record_test();
     std::cout << "time:" << (double)((clock()-start))/CLOCKS_PER_SEC << std::endl;
     return 0;
 }
 
 DB::Type::TableProperty get_table_property(){
     std::vector<std::string> col_name_lst{"col_1", "col_2"};
-    ColProperty::Tuple tuple("col_1", DB::Enum::INT, INT_SIZE);
-    ColProperty::Tuple tuple2("col_2", DB::Enum::CHAR, 8);
-    ColProperty col_property;
-    col_property.tuple_lst.push_back(tuple);
-    col_property.tuple_lst.push_back(tuple2);
+    TupleProperty::ColProperty tuple("col_1", DB::Enum::INT, INT_SIZE);
+    TupleProperty::ColProperty tuple2("col_2", DB::Enum::VARCHAR, 8);
+    TupleProperty col_property;
+    col_property.property_lst.push_back(tuple);
+    col_property.property_lst.push_back(tuple2);
     return TableProperty("test", "col_1", col_property);
 }
 
@@ -58,15 +60,14 @@ void bpt_test() {
 //    for (int j = 0; j < 10; ++j) {
 //
 //    }
-    Int key = 1;
-    std::memcpy(bytes.data(), &key, INT_SIZE);
-    std::memcpy(bytes.data()+INT_SIZE, std::string("fffffffff").data(), 8);
+    Value str_value = Value::make(ColType::VARCHAR, std::string("asd"));
+    Bytes str_bytes = Record::value_to_bytes(str_value);
     // insert test
-    for (Int j = 1; j < 1000; j += 2) {
-        bpTree.insert(Value::make(DB::Enum::INT, j), bytes);
-    }
-    for (Int j = 100; j < 1000; j += 2) {
-        bpTree.insert(Value::make(DB::Enum::INT, j), bytes);
+    for (Int j = 1; j < 1000; j += 1) {
+        Value key_value = Value::make(ColType::INT, DB::Type::Int(j));
+        Bytes key_bytes = Record::value_to_bytes(key_value);
+        key_bytes.insert(key_bytes.end(), str_bytes.begin(), str_bytes.end());
+        bpTree.insert(Value::make(DB::Enum::INT, j), key_bytes);
     }
     bpTree.print();
     for (Int j = 100; j < 1000; j += 2) {
@@ -80,7 +81,7 @@ void bpt_test() {
         }
         cout << endl;
     };
-    DB::Type::PosList pos_lst = bpTree.find(Value::make(DB::Enum::INT, 11));
+    DB::Type::PosList pos_lst = bpTree.find(Value::make(DB::Enum::INT, DB::Type::Int(1)));
     print_pos_lst(pos_lst);
     // range find test
     pos_lst = bpTree.find(Value::make(DB::Enum::INT, 1), Value::make(DB::Enum::INT, 100));
@@ -89,13 +90,17 @@ void bpt_test() {
     print_pos_lst(pos_lst);
     pos_lst = bpTree.find(Value::make(DB::Enum::INT, 100), false);
     print_pos_lst(pos_lst);
-//    for (int j = 1000; j < 1500; j += 2) {
-//        bpTree.insert(j, bytes);
-//    }
-//    for (int j = 1; j < 1000; j += 2) {
-//        bpTree.update(j);
-//    }
-//    bpTree.print();
+    Record record(get_table_property());
+    Value v1 = Value::make(DB::Enum::INT, DB::Type::Int(3));
+    DB::Type::TupleLst tuple_lst = record.find("col_1", [v1](auto x){ return x < v1;});
+    for (auto &&tup : tuple_lst.tuple_lst) {
+        cout << "[ ";
+        for (auto &&value : tup.value_lst) {
+            cout << value.get_string() << " ";
+        }
+        cout << "]" << endl;
+    }
+    cout << endl;
 }
 
 void io_test(){
@@ -132,21 +137,33 @@ void table_test(){
     //insert test
     Table table("test");
     std::vector<Value> vs{Value::str_to_value(DB::Enum::INT, "12"),
-                          Value::str_to_value(DB::Enum::CHAR, "test_txt")};
+                          Value::str_to_value(DB::Enum::VARCHAR, "test_txt")};
     table.insert(vs);
-    // make_predicate_func test
-    auto e_f = Table::make_predicate_func("=");
-    auto l_f = Table::make_predicate_func("<");
-    cout << e_f(Value::make(DB::Enum::INT, 2), Value::make(DB::Enum::INT, 2)) << endl;
-    cout << e_f(Value::make(DB::Enum::FLOAT, DB::Type::Float(2.0)), Value::make(DB::Enum::FLOAT, DB::Type::Float(2.1))) << endl;
-    cout << e_f(Value::make(DB::Enum::CHAR, std::string("asf")), Value::make(DB::Enum::CHAR, std::string("asf"))) << endl;
-    cout << l_f(Value::make(DB::Enum::INT, 1), Value::make(DB::Enum::INT, 2)) << endl;
-    cout << l_f(Value::make(DB::Enum::FLOAT, DB::Type::Float(1.0)), Value::make(DB::Enum::FLOAT, DB::Type::Float(2.1))) << endl;
-    cout << l_f(Value::make(DB::Enum::CHAR, std::string("asf")), Value::make(DB::Enum::CHAR, std::string("asf"))) << endl;
-    // make_predicate_func test
-    auto a_f = Table::make_op_func("+");
-    cout << a_f(Value::make(DB::Enum::INT, 2),
-                Value::make(DB::Enum::INT, 2)).get_string() << endl;
-    cout << a_f(Value::make(DB::Enum::FLOAT, DB::Type::Float(2.0)),
-                Value::make(DB::Enum::FLOAT, DB::Type::Float(2.1))).get_string() << endl;
+}
+
+void record_test(){
+    Record record(get_table_property());
+    Value v1 = Value::make(DB::Enum::INT, DB::Type::Int(3));
+    Value v2 = Value::make(DB::Enum::VARCHAR, std::string("asd"));
+    DB::Type::Tuple tuple;
+    tuple.value_lst.push_back(v1);
+    tuple.value_lst.push_back(v2);
+    Bytes bytes = Record::tuple_to_bytes(tuple);
+    for (int i = 0; i < 1000; ++i) {
+        auto pos = record.insert_record(bytes);
+        cout << pos << " ";
+        if (i % 100 == 99) {
+            record.remove_record(pos);
+        }
+    }
+
+    DB::Type::TupleLst tuple_lst = record.find("col_1", [v1](auto x){ return x == v1;});
+    for (auto &&tup : tuple_lst.tuple_lst) {
+        cout << "[ ";
+        for (auto &&value : tup.value_lst) {
+            cout << value.get_string() << " ";
+        }
+        cout << "]" << endl;
+    }
+    cout << endl;
 }

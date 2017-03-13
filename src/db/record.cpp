@@ -68,6 +68,9 @@ DB::Type::Pos Record::insert_record(const DB::Type::Bytes &data) {
         throw std::runtime_error("Error: data size greater BLOCK_SIZE");
     }
     size_t pos = get_free_pos(data.size());
+    if (pos == 4080) {
+        std::cout << pos << std::endl;
+    }
     size_t block_num = pos / BLOCK_SIZE;
     size_t offset = pos % BLOCK_SIZE;
     IO io(record_path);
@@ -105,7 +108,6 @@ Record::TupleLst Record::find(const std::string &col_name, std::function<bool(Va
 // - get -
 Pos Record::get_free_pos(size_t data_size) {
     size_t pos;
-    std::map<std::string, std::string> map;
     for (auto &&item : free_pos_lst) {
         if (item.second == data_size) {
             pos = item.first;
@@ -197,8 +199,8 @@ void Record::read_meta_data() {
     for (size_t i = 0; i < pos_count; ++i) {
         Pos pos;
         size_t size;
-        std::memcpy(&pos, beg+(POS_SIZE*i), POS_SIZE);
-        std::memcpy(&size, beg+(POS_SIZE*i)+POS_SIZE, SIZE_SIZE);
+        std::memcpy(&pos, beg+((POS_SIZE+SIZE_SIZE)*i), POS_SIZE);
+        std::memcpy(&size, beg+((POS_SIZE+SIZE_SIZE)*i)+POS_SIZE, SIZE_SIZE);
 //        free_pos_lst.insert(pos, size);
         free_pos_lst[pos] = size;
     }
@@ -217,6 +219,7 @@ void Record::write_meta_data() {
         bytes.insert(bytes.end(), size_bytes.begin(), size_bytes.end());
     }
     Bytes block_num = DB::Function::en_bytes(end_block_num);
+    bytes.insert(bytes.end(), block_num.begin(), block_num.end());
     IO io(record_meta_path);
     io.write_file(bytes);
 }

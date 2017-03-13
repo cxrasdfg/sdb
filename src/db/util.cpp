@@ -36,13 +36,48 @@ namespace DB {
             property_lst.push_back(ColProperty(col_name, col_type, type_size));
         }
 
-        // ========== TableProperty =========
-        size_t TableProperty::get_record_size() const {
-            size_t total_size = 0;
-            for (auto &&item : tuple_property.property_lst) {
-                total_size += item.type_size;
+        // ========== Tuple =========
+        Value Tuple::get_col_value(const TupleProperty &tuple_property, const std::string &col_name) {
+            return get_col_value_ref(tuple_property, col_name);
+        }
+
+        Value& Tuple::get_col_value_ref(const TupleProperty &tuple_property, const std::string &col_name) {
+            auto lst = tuple_property.property_lst;
+            for (size_t j = 0; j < lst.size(); ++j) {
+                if (lst[j].col_name == col_name) {
+                    return value_lst[j];
+                }
             }
-            return total_size;
+            throw std::runtime_error(std::string("Error: can't found col:{")+col_name+"}");
+        }
+
+        void Tuple::set_col_value(const TupleProperty &property, const std::string &col_name, const Value &value) {
+            get_col_value_ref(property, col_name) = value;
+        }
+
+        void Tuple::set_col_value(const TupleProperty &property, const std::string &col_name, VVFunc op) {
+            auto &value = get_col_value_ref(property, col_name);
+            value = op(value);
+        }
+    }
+
+    namespace Function {
+        Type::BVFunc get_bvfunc(Enum::BVFunc func, Type::Value value) {
+            using Type::Value;
+            switch (func) {
+                case Enum::EQ:
+                    return [value](Value v){ return v == value;};
+                case Enum::LESS:
+                    return [value](Value v){ return v < value;};
+                case Enum::GREATER:
+                    return [value](Value v){ return !(v <= value);};
+            }
+        }
+        void tuple_lst_map(Type::TupleLst &tuple_lst,
+                           const std::string &col_name,
+                           Type::VVFunc) {
+            for (auto &&tuple : tuple_lst.tuple_lst) {
+            }
         }
     }
 }

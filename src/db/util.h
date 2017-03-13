@@ -4,14 +4,15 @@
 
 #ifndef UTIL_H
 #define UTIL_H
+
 #include <stdexcept>
 #include <vector>
 #include <cstring>
 #include <string>
 #include <iostream>
 #include <map>
+#include <unordered_map>
 #include <cppformat/format.h>
-
 
 namespace DB {
     namespace Enum {
@@ -21,6 +22,12 @@ namespace DB {
             // float
             FLOAT,
             VARCHAR
+        };
+
+        enum BVFunc: char {
+            EQ,
+            LESS,
+            GREATER,
         };
     }
 
@@ -196,6 +203,9 @@ namespace DB {
             }
         };
 
+        using BVFunc = std::function<bool(Value)>;
+        using VVFunc = std::function<Value(Value)>;
+
         struct TupleProperty{
             // type
             struct ColProperty {
@@ -226,22 +236,24 @@ namespace DB {
                           const std::string &key,
                           const TupleProperty &col_property)
                     :table_name(table_name), key(key), tuple_property(col_property){}
-
-            size_t get_record_size()const;
         };
 
         struct Tuple {
             std::vector<Value> value_lst;
 
             Tuple()= default;
-            Tuple(const std::vector<Value> &tuple):value_lst(tuple){}
+            Value get_col_value(const TupleProperty &tuple_property, const std::string &col_name);
+            Value &get_col_value_ref(const TupleProperty &tuple_property, const std::string &col_name);
+            void set_col_value(const TupleProperty &property, const std::string &col_name, const Value &value);
+            void set_col_value(const TupleProperty &property, const std::string &col_name, VVFunc op);
         };
 
         struct TupleLst {
             std::vector<Tuple> tuple_lst;
+            TupleProperty tuple_property;
 
-            TupleLst()= default;
-            TupleLst(const std::vector<Tuple> &tuple_lst):tuple_lst(tuple_lst){}
+            TupleLst()= delete;
+            TupleLst(const TupleProperty &tuple_property):tuple_property(tuple_property){}
         };
     }
 
@@ -272,6 +284,9 @@ namespace DB {
                     throw std::runtime_error("Error: [get_type_len] type must be non-variable type");
             }
         }
+
+        Type::BVFunc get_bvfunc(Enum::BVFunc func, Type::Value value);
+        void tuple_lst_map(Type::TupleLst &tuple_lst, const std::string &col_name, Type::VVFunc);
     }
 
 }

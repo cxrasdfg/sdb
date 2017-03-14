@@ -52,6 +52,8 @@ void Table::update(const std::string &col_name,
     // data update
     for (auto &&tuple : tuple_lst.tuple_lst) {
         Value key = tuple.get_col_value(property.tuple_property, property.key);
+        Value value = op(tuple.get_col_value(property.tuple_property, col_name));
+        tuple.set_col_value(tuple_lst.tuple_property, col_name, value);
         Bytes data = Record::tuple_to_bytes(tuple);
         bpTree.update(key, data);
     }

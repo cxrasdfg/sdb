@@ -104,7 +104,7 @@ namespace DB {
 
         bool is_var_type(Enum::ColType type) {
             using namespace Enum;
-            return type != VARCHAR;
+            return type == VARCHAR;
         }
 
         Type::BVFunc get_bvfunc(Enum::BVFunc func, Type::Value value) {

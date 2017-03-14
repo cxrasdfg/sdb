@@ -151,9 +151,13 @@ void table_test(){
     }
     value = Value::make(DB::Enum::INT, Int(650));
     table.remove("col_1", get_bvfunc(DB::Enum::LESS, value));
+    value = Value::make(DB::Enum::INT, Int(700));
 //    BpTree bpTree(get_table_property());
 //    bpTree.print();
-    value = Value::make(DB::Enum::INT, Int(700));
+//    auto str_value = Value::make(DB::Enum::VARCHAR, std::string("qwe"));
+//    table.find("col_1", get_bvfunc(DB::Enum::LESS, value)).print();
+    auto vvf = [](Value v){return Value::make(DB::Enum::VARCHAR, std::string("string"));};
+    table.update("col_2", [](Value v){ return true;}, vvf);
     table.find("col_1", get_bvfunc(DB::Enum::LESS, value)).print();
 }
 

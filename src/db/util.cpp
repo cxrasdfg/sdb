@@ -37,8 +37,14 @@ namespace DB {
         }
 
         // ========== Tuple =========
-        Value Tuple::get_col_value(const TupleProperty &tuple_property, const std::string &col_name) {
-            return get_col_value_ref(tuple_property, col_name);
+        Value Tuple::get_col_value(const TupleProperty &tuple_property, const std::string &col_name)const {
+            auto lst = tuple_property.property_lst;
+            for (size_t j = 0; j < lst.size(); ++j) {
+                if (lst[j].col_name == col_name) {
+                    return value_lst[j];
+                }
+            }
+            throw std::runtime_error(std::string("Error: can't found col:{")+col_name+"}");
         }
 
         Value& Tuple::get_col_value_ref(const TupleProperty &tuple_property, const std::string &col_name) {
@@ -59,9 +65,48 @@ namespace DB {
             auto &value = get_col_value_ref(property, col_name);
             value = op(value);
         }
+
+        void Tuple::set_col_value(const TupleProperty &property, const std::string &col_name,
+                                  BVFunc predicate, VVFunc op) {
+            Value &value = get_col_value_ref(property, col_name);
+            if (predicate(value)) {
+                value = op(value);
+            }
+        }
+
+        void TupleLst::print() const {
+            for (auto &&lst: tuple_property.property_lst) {
+                std::cout << lst.col_name << "\t|";
+            }
+            std::cout << std::endl;
+            for (auto &&item : tuple_lst) {
+                for (auto &&value : item.value_lst) {
+                     std::cout << value.get_string() << "\t|";
+                }
+                std::cout << std::endl;
+            }
+        }
     }
 
     namespace Function {
+        size_t get_type_len(Enum::ColType col_type) {
+            using namespace Enum;
+            using namespace Const;
+            switch (col_type) {
+                case INT:
+                    return INT_SIZE;
+                case FLOAT:
+                    return FLOAT_SIZE;
+                default:
+                    throw std::runtime_error("Error: [get_type_len] type must be non-variable type");
+            }
+        }
+
+        bool is_var_type(Enum::ColType type) {
+            using namespace Enum;
+            return type != VARCHAR;
+        }
+
         Type::BVFunc get_bvfunc(Enum::BVFunc func, Type::Value value) {
             using Type::Value;
             switch (func) {

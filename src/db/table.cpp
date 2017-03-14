@@ -28,28 +28,81 @@ using namespace DB::Const;
 void Table::insert(const Tuple &tuple) {
     auto bytes = Record::tuple_to_bytes(tuple);
     BpTree bpTree(property);
-    bpTree.insert(Record::get_col_value(property, property.key, tuple), bytes);
+    bpTree.insert(tuple.get_col_value(property.tuple_property, property.key), bytes);
 }
 
 void Table::update(const std::string &col_name,
-                   const std::string &op,
-                   const Value &value) {
+                   DB::Type::BVFunc predicate,
+                   DB::Type::VVFunc op) {
+    Record record(property);
+    BpTree bpTree(property);
+    bool is_var_type = DB::Function::is_var_type(property.tuple_property.get_col_type(col_name));
+    if (!is_has_index(col_name) && !is_var_type) {
+        record.update(col_name, predicate, op);
+        return;
+    }
+    // get tuple lst
+    TupleLst tuple_lst(property.tuple_property);
+    if (is_has_index(col_name)) {
+        PosList pos_lst = bpTree.find(predicate);
+        tuple_lst = record.read_record(pos_lst);
+    } else {
+        tuple_lst = record.find(col_name, predicate);
+    }
+    // data update
+    for (auto &&tuple : tuple_lst.tuple_lst) {
+        Value key = tuple.get_col_value(property.tuple_property, property.key);
+        Bytes data = Record::tuple_to_bytes(tuple);
+        bpTree.update(key, data);
+    }
 }
 
-void Table::remove(const std::string &col_name,
-                   const std::string &predicate,
-                   const Value &value) {
+void Table::remove(const std::string &col_name, const Value &value) {
+    BpTree bpTree(property);
+    if (is_has_index(col_name)) {
+        bpTree.remove(value);
+        return;
+    }
+    TupleLst tuple_lst = find(col_name, value);
+    for (auto &&tuple : tuple_lst.tuple_lst) {
+        Value key = tuple.get_col_value(property.tuple_property, property.key);
+        bpTree.remove(key);
+    }
 }
 
-void Table::find(const std::string &col_name, const DB::Type::Value &value) {
+void Table::remove(const std::string &col_name, std::function<bool(Value)> predicate) {
+    TupleLst tuple_lst = find(col_name, predicate);
+    BpTree bpTree(property);
+    for (auto &&tuple : tuple_lst.tuple_lst) {
+        Value value = tuple.get_col_value(property.tuple_property, property.key);
+        bpTree.remove(value);
+    }
+}
+
+Table::TupleLst Table::find(const std::string &col_name, const DB::Type::Value &value) {
+    Record record(property);
+    if (col_name == property.key) {
+        BpTree bpTree(property);
+        PosList pos_lst = bpTree.find(value);
+        return record.read_record(pos_lst);
+    }
+    auto predicate = DB::Function::get_bvfunc(DB::Enum::EQ, value);
+    return record.find(col_name, predicate);
 }
 
 Record::TupleLst Table::find(const std::string &col_name, std::function<bool(Value)> predicate) {
-    PosList pos_lst;
+    Record record(property);
     if (col_name == property.key) {
+        PosList pos_lst;
         BpTree bpTree(property);
         pos_lst = bpTree.find(predicate);
+//        for (auto &&pos : pos_lst) {
+//            std::cout << pos << " ";
+//        }
+//        std::cout << std::endl;
+        return record.read_record(pos_lst);
     }
+    return record.find(col_name, predicate);
 }
 
 void Table::create_table(const DB::Type::TableProperty &property) {
@@ -157,4 +210,8 @@ void Table::write_meta_data(const DB::Type::TableProperty &property) {
     }
     IO io(property.table_name+"_meta.sdb");
     io.write_file(bytes);
+}
+
+bool Table::is_has_index(const std::string &col_name) {
+    return col_name == property.key;
 }

@@ -118,6 +118,34 @@ void BpTree::remove(const Value &key){
     }
 }
 
+void BpTree::update(const Value &key, const Bytes &data) {
+    nodePtrType ptr = read(root_pos);
+    if (ptr == nullptr){
+        throw_error("Error: bpTree is empty!");
+    }
+    while (ptr != nullptr) {
+        bool is_leaf = ptr->is_leaf;
+        bool is_for_end = true;
+        for (auto &&x: ptr->pos_lst) {
+            if (key == x.first && is_leaf){
+                Record record(table_property);
+                x.second = record.update(x.second, data);
+                write(ptr);
+                return;
+            } else if (!is_leaf && key <= x.first){
+                ptr = read(x.second);
+                is_for_end = false;
+                break;
+            } else if (key < x.first && is_leaf) {
+                break;
+            }
+        }
+        if (is_for_end) {
+            throw_error("Error: can't fount key");
+        }
+    }
+}
+
 BpTree::nodePtrType BpTree::read(DB::Type::Pos pos) const{
     if (free_end_pos == 0) {
         return nullptr;
@@ -261,6 +289,7 @@ bool BpTree::node_merge(nodePtrType &ptr_1, nodePtrType &ptr_2) {
         write(ptr_2);
         return false;
     } else {
+        ptr_1->end_pos = ptr_2->end_pos;
         write(ptr_1);
         free_pos_list.push_back(ptr_2->file_pos);
         ptr_2 = nullptr;
@@ -337,6 +366,7 @@ PosList BpTree::find(std::function<bool(Value)> predicate) const {
     PosList pos_lst;
     while (ptr->file_pos != end_ptr->file_pos) {
         pos_lst_insert(pos_lst, ptr->pos_lst.begin(), ptr->pos_lst.end(), predicate);
+        ptr = read(ptr->end_pos);
     }
     pos_lst_insert(pos_lst, end_ptr->pos_lst.begin(), end_ptr->pos_lst.end(), predicate);
     return pos_lst;

@@ -30,15 +30,16 @@ public:
     // record
     TupleLst read_record(const DB::Type::PosList &pos_lst);
     TupleLst read_record(size_t block_num);
+    void write_record(size_t block_num, const TupleLst &tuple_lst);
     DB::Type::Pos insert_record(const DB::Type::Bytes &data);
     void remove_record(DB::Type::Pos pos);
+    // only non-variable column data
+    void update(const std::string &col_name, DB::Type::BVFunc bvFunc, DB::Type::VVFunc vvFunc);
+    Pos update(Pos pos, const Bytes &data);
     TupleLst find(const std::string &col_name, std::function<bool(Value)> predicate);
 
     // get
     Pos get_free_pos(size_t data_size);
-    static DB::Type::Value get_col_value(const TableProperty &property,
-                                         const std::string &col_name,
-                                         const Tuple &tuple);
 
     // value_lst
     // convert

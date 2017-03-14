@@ -90,7 +90,7 @@ namespace DB {
                 }
             }
             template <typename Func>
-            static auto number_value_op(const Value &value1, const Value &value2, Func op) {
+            static auto number_value_op(const Value &value1, const Value &value2, Func op){
                 using namespace Enum;
                 using namespace Const;
                 if (value1.type != value2.type) {
@@ -116,7 +116,7 @@ namespace DB {
                 }
             }
             template <typename Func>
-            auto value_op(Func op) {
+            auto value_op(Func op) const{
                 using namespace Enum;
                 using namespace Const;
                 switch (type) {
@@ -184,7 +184,7 @@ namespace DB {
             }
 
             //
-            std::string get_string(){
+            std::string get_string()const{
                 return value_op([=](auto x){ return str_ret(x);});
             }
             static bool is_var_type(Enum::ColType col_type){
@@ -195,10 +195,10 @@ namespace DB {
             }
 
         private:
-            template <typename T> std::string str_ret(T t){
+            template <typename T> std::string str_ret(T t)const{
                 return std::to_string(t);
             }
-            std::string str_ret(std::string str) {
+            std::string str_ret(std::string str)const {
                 return str;
             }
         };
@@ -242,10 +242,11 @@ namespace DB {
             std::vector<Value> value_lst;
 
             Tuple()= default;
-            Value get_col_value(const TupleProperty &tuple_property, const std::string &col_name);
+            Value get_col_value(const TupleProperty &tuple_property, const std::string &col_name)const;
             Value &get_col_value_ref(const TupleProperty &tuple_property, const std::string &col_name);
             void set_col_value(const TupleProperty &property, const std::string &col_name, const Value &value);
             void set_col_value(const TupleProperty &property, const std::string &col_name, VVFunc op);
+            void set_col_value(const TupleProperty &property, const std::string &col_name, BVFunc predicate, VVFunc op);
         };
 
         struct TupleLst {
@@ -254,6 +255,8 @@ namespace DB {
 
             TupleLst()= delete;
             TupleLst(const TupleProperty &tuple_property):tuple_property(tuple_property){}
+
+            void print()const;
         };
     }
 
@@ -272,18 +275,8 @@ namespace DB {
             std::cout << std::endl;
         }
 
-        inline size_t get_type_len(Enum::ColType col_type) {
-            using namespace Enum;
-            using namespace Const;
-            switch (col_type) {
-                case INT:
-                    return INT_SIZE;
-                case FLOAT:
-                    return FLOAT_SIZE;
-                default:
-                    throw std::runtime_error("Error: [get_type_len] type must be non-variable type");
-            }
-        }
+        size_t get_type_len(Enum::ColType col_type);
+        bool is_var_type(Enum::ColType type);
 
         Type::BVFunc get_bvfunc(Enum::BVFunc func, Type::Value value);
         void tuple_lst_map(Type::TupleLst &tuple_lst, const std::string &col_name, Type::VVFunc);

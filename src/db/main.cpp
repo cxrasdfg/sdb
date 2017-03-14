@@ -36,9 +36,9 @@ int main(void) {
 //    io_test();
     Table::drop_table("test");
     table_init_test();
-//    table_test();
-    bpt_test();
-//    record_test();
+//    bpt_test();
+    table_test();
+//r   record_test();
     std::cout << "time:" << (double)((clock()-start))/CLOCKS_PER_SEC << std::endl;
     return 0;
 }
@@ -56,7 +56,6 @@ DB::Type::TableProperty get_table_property(){
 void bpt_test() {
     auto property = get_table_property();
     BpTree bpTree(property);
-    Bytes bytes(property.get_record_size());
 //    for (int j = 0; j < 10; ++j) {
 //
 //    }
@@ -92,15 +91,8 @@ void bpt_test() {
     print_pos_lst(pos_lst);
     Record record(get_table_property());
     Value v1 = Value::make(DB::Enum::INT, DB::Type::Int(3));
-    DB::Type::TupleLst tuple_lst = record.find("col_1", [v1](auto x){ return x < v1;});
-    for (auto &&tup : tuple_lst.tuple_lst) {
-        cout << "[ ";
-        for (auto &&value : tup.value_lst) {
-            cout << value.get_string() << " ";
-        }
-        cout << "]" << endl;
-    }
-    cout << endl;
+    DB::Type::TupleLst tuple_lst = record.find("col_1", [v1](auto x){ return v1 < x;});
+    tuple_lst.print();
 }
 
 void io_test(){
@@ -134,11 +126,35 @@ void table_init_test(){
 }
 
 void table_test(){
+    using DB::Function::get_bvfunc;
+    using DB::Enum::INT;
     //insert test
     Table table("test");
-    std::vector<Value> vs{Value::str_to_value(DB::Enum::INT, "12"),
-                          Value::str_to_value(DB::Enum::VARCHAR, "test_txt")};
-    table.insert(vs);
+    // insert test
+    for (Int i = 0; i < 1000; ++i) {
+        DB::Type::Tuple tuple;
+        Value v1 = Value::make(DB::Enum::INT, i);
+        tuple.value_lst.push_back(v1);
+        Value v2 = Value::make(DB::Enum::VARCHAR, std::string("asd"));
+        tuple.value_lst.push_back(v2);
+        table.insert(tuple);
+    }
+    // find test
+    Value value = Value::make(DB::Enum::INT, Int(600));
+    auto bvf = DB::Function::get_bvfunc(DB::Enum::LESS, value);
+    DB::Type::TupleLst tuple_lst = table.find("col_1", bvf);
+//    tuple_lst.print();
+    // remove
+    for (Int i = 0; i < 500; ++i) {
+        value = Value::make(DB::Enum::INT, i);
+        table.remove("col_1", value);
+    }
+    value = Value::make(DB::Enum::INT, Int(650));
+    table.remove("col_1", get_bvfunc(DB::Enum::LESS, value));
+//    BpTree bpTree(get_table_property());
+//    bpTree.print();
+    value = Value::make(DB::Enum::INT, Int(700));
+    table.find("col_1", get_bvfunc(DB::Enum::LESS, value)).print();
 }
 
 void record_test(){

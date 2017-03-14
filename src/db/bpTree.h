@@ -69,14 +69,19 @@ public:
     void clear();
     void write_info_block();
 
-    void insert(const Value &key, const Bytes &data);
-    void remove(const Value &key);
     nodePtrType read(DB::Type::Pos pos) const;
     void write(nodePtrType ptr);
+
+    // sql
+    void insert(const Value &key, const Bytes &data);
+    void remove(const Value &key);
+    void update(const Value &key, const Bytes &data);
     PosList find(const Value &key)const;
     PosList find(const Value &mid, bool is_less)const;
     PosList find(const Value &beg, const Value &end)const;
     PosList find(std::function<bool(Value)> predicate) const;
+
+    // debug log
     void print()const;
 
 private:

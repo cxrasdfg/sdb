@@ -34,7 +34,8 @@ public:
     DB::Type::Pos insert_record(const DB::Type::Bytes &data);
     void remove_record(DB::Type::Pos pos);
     // only non-variable column data
-    void update(const std::string &col_name, DB::Type::BVFunc bvFunc, DB::Type::VVFunc vvFunc);
+    void update(const std::string &pred_col_name, DB::Type::BVFunc bvFunc, const std::string &op_col_name,
+                DB::Type::VVFunc vvFunc);
     Pos update(Pos pos, const Bytes &data);
     TupleLst find(const std::string &col_name, std::function<bool(Value)> predicate);
 

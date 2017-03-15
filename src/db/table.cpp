@@ -31,29 +31,28 @@ void Table::insert(const Tuple &tuple) {
     bpTree.insert(tuple.get_col_value(property.tuple_property, property.key), bytes);
 }
 
-void Table::update(const std::string &col_name,
-                   DB::Type::BVFunc predicate,
-                   DB::Type::VVFunc op) {
+void Table::update(const std::string &pred_col_name, DB::Type::BVFunc predicate,
+                   const std::string &op_col_name, DB::Type::VVFunc op) {
     Record record(property);
     BpTree bpTree(property);
-    bool is_var_type = DB::Function::is_var_type(property.tuple_property.get_col_type(col_name));
-    if (!is_has_index(col_name) && !is_var_type) {
-        record.update(col_name, predicate, op);
+    bool is_var_type = DB::Function::is_var_type(property.tuple_property.get_col_type(op_col_name));
+    if (!is_has_index(pred_col_name) && !is_var_type) {
+        record.update(pred_col_name, predicate, op_col_name, op);
         return;
     }
     // get tuple lst
     TupleLst tuple_lst(property.tuple_property);
-    if (is_has_index(col_name)) {
+    if (is_has_index(pred_col_name)) {
         PosList pos_lst = bpTree.find(predicate);
         tuple_lst = record.read_record(pos_lst);
     } else {
-        tuple_lst = record.find(col_name, predicate);
+        tuple_lst = record.find(pred_col_name, predicate);
     }
     // data update
     for (auto &&tuple : tuple_lst.tuple_lst) {
         Value key = tuple.get_col_value(property.tuple_property, property.key);
-        Value value = op(tuple.get_col_value(property.tuple_property, col_name));
-        tuple.set_col_value(tuple_lst.tuple_property, col_name, value);
+//        Value value = op(tuple.get_col_value(property.tuple_property, pred_col_name));
+        tuple.set_col_value(tuple_lst.tuple_property, pred_col_name, predicate, op_col_name, op);
         Bytes data = Record::tuple_to_bytes(tuple);
         bpTree.update(key, data);
     }

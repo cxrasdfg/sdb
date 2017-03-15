@@ -246,7 +246,8 @@ namespace DB {
             Value &get_col_value_ref(const TupleProperty &tuple_property, const std::string &col_name);
             void set_col_value(const TupleProperty &property, const std::string &col_name, const Value &value);
             void set_col_value(const TupleProperty &property, const std::string &col_name, VVFunc op);
-            void set_col_value(const TupleProperty &property, const std::string &col_name, BVFunc predicate, VVFunc op);
+            void set_col_value(const TupleProperty &property, const std::string &pred_col_name, BVFunc predicate,
+                                           const std::string &op_col_name, VVFunc op);
         };
 
         struct TupleLst {

@@ -29,7 +29,8 @@ public:
     void insert(const Tuple &tuple);
     void remove(const std::string &col_name, const Value &value);
     void remove(const std::string &col_name, DB::Type::BVFunc predicate);
-    void update(const std::string &col_name, DB::Type::BVFunc predicate, DB::Type::VVFunc op);
+    void update(const std::string &pred_col_name, DB::Type::BVFunc predicate, const std::string &op_col_name,
+                    DB::Type::VVFunc op);
     TupleLst find(const std::string &col_name, const DB::Type::Value &value);
     TupleLst find(const std::string &col_name, std::function<bool(Value)> predicate);
 

@@ -157,7 +157,9 @@ void table_test(){
 //    auto str_value = Value::make(DB::Enum::VARCHAR, std::string("qwe"));
 //    table.find("col_1", get_bvfunc(DB::Enum::LESS, value)).print();
     auto vvf = [](Value v){return Value::make(DB::Enum::VARCHAR, std::string("string"));};
-    table.update("col_2", [](Value v){ return true;}, vvf);
+    // update
+    table.update("col_1", get_bvfunc(DB::Enum::LESS, value), "col_2", vvf);
+    value = Value::make(DB::Enum::INT, Int(750));
     table.find("col_1", get_bvfunc(DB::Enum::LESS, value)).print();
 }
 

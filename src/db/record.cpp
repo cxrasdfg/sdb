@@ -86,14 +86,13 @@ void Record::write_record(size_t block_num, const TupleLst &tuple_lst) {
     io.write_file(block_data);
 }
 
-void Record::update(const std::string &col_name,
-                    DB::Type::BVFunc bvFunc,
-                    DB::Type::VVFunc vvFunc) {
+void Record::update(const std::string &pred_col_name, DB::Type::BVFunc bvFunc,
+                    const std::string &op_col_name, DB::Type::VVFunc vvFunc) {
     size_t block_num = 0;
     while (block_num > end_block_num) {
         TupleLst tuple_lst = read_record(block_num);
         for (auto &&tuple : tuple_lst.tuple_lst) {
-            tuple.set_col_value(property.tuple_property, col_name, bvFunc, vvFunc);
+            tuple.set_col_value(property.tuple_property, pred_col_name, bvFunc, op_col_name, vvFunc);
         }
         write_record(block_num, tuple_lst);
         block_num++;

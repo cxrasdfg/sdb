@@ -1,5 +1,6 @@
 #include <boost/filesystem.hpp>
 #include <iostream>
+#include <initializer_list>
 #include "util.h"
 
 namespace DB {
@@ -66,11 +67,13 @@ namespace DB {
             value = op(value);
         }
 
-        void Tuple::set_col_value(const TupleProperty &property, const std::string &col_name,
-                                  BVFunc predicate, VVFunc op) {
-            Value &value = get_col_value_ref(property, col_name);
-            if (predicate(value)) {
-                value = op(value);
+        void Tuple::set_col_value(const TupleProperty &property,
+                                  const std::string &pred_col_name, BVFunc predicate,
+                                  const std::string &op_col_name, VVFunc op) {
+            Value pred_value = get_col_value(property, pred_col_name);
+            Value &op_value = get_col_value_ref(property, op_col_name);
+            if (predicate(pred_value)) {
+                op_value = op(op_value);
             }
         }
 

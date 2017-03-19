@@ -7,10 +7,12 @@
 #include <ctime>
 #include <functional>
 #include <cppformat/format.h>
+#include <memory>
 
 #include "table.h"
 #include "util.h"
 #include "bpTree.h"
+#include "cache.h"
 
 using std::cout;
 using std::endl;
@@ -30,15 +32,17 @@ void io_test();
 void table_init_test();
 void table_test();
 void record_test();
+void cache_test();
 
 int main(void) {
     clock_t start = clock();
 //    io_test();
-    Table::drop_table("test");
-    table_init_test();
+//    Table::drop_table("test");
+//    table_init_test();
 //    bpt_test();
-    table_test();
+//    table_test();
 //r   record_test();
+    cache_test();
     std::cout << "time:" << (double)((clock()-start))/CLOCKS_PER_SEC << std::endl;
     return 0;
 }
@@ -73,7 +77,7 @@ void bpt_test() {
         bpTree.remove(Value::make(DB::Enum::INT, j));
     }
     bpTree.print();
-    // key find test
+    // key get test
     auto print_pos_lst = [](auto l){
         for (auto &&p : l) {
             cout << p << " ";
@@ -82,7 +86,7 @@ void bpt_test() {
     };
     DB::Type::PosList pos_lst = bpTree.find(Value::make(DB::Enum::INT, DB::Type::Int(1)));
     print_pos_lst(pos_lst);
-    // range find test
+    // range get test
     pos_lst = bpTree.find(Value::make(DB::Enum::INT, 1), Value::make(DB::Enum::INT, 100));
     print_pos_lst(pos_lst);
     pos_lst = bpTree.find(Value::make(DB::Enum::INT, 100), true);
@@ -139,7 +143,7 @@ void table_test(){
         tuple.value_lst.push_back(v2);
         table.insert(tuple);
     }
-    // find test
+    // get test
     Value value = Value::make(DB::Enum::INT, Int(600));
     auto bvf = DB::Function::get_bvfunc(DB::Enum::LESS, value);
     DB::Type::TupleLst tuple_lst = table.find("col_1", bvf);
@@ -155,7 +159,7 @@ void table_test(){
 //    BpTree bpTree(get_table_property());
 //    bpTree.print();
 //    auto str_value = Value::make(DB::Enum::VARCHAR, std::string("qwe"));
-//    table.find("col_1", get_bvfunc(DB::Enum::LESS, value)).print();
+//    table.get("col_1", get_bvfunc(DB::Enum::LESS, value)).print();
     auto vvf = [](Value v){return Value::make(DB::Enum::VARCHAR, std::string("string"));};
     // update
     table.update("col_1", get_bvfunc(DB::Enum::LESS, value), "col_2", vvf);
@@ -188,4 +192,31 @@ void record_test(){
         cout << "]" << endl;
     }
     cout << endl;
+}
+
+void cache_test() {
+    Cache cache(4);
+    auto file = "test";
+    for (size_t i = 0; i < 4; ++i) {
+        auto str = std::to_string(i);
+        auto ptr = std::make_shared<Bytes>(Bytes(str.begin(), str.end()));
+        cache.put(file, i, ptr);
+    }
+    for (size_t i = 0; i < 4; ++i) {
+        auto data = cache.get(file, i);
+        if (data) {
+            cout << "get: " << i << ":" << data->data() << endl;
+        }
+    }
+    for (size_t i = 0; i < 10; ++i) {
+        auto str = std::to_string(i);
+        auto ptr = std::make_shared<Bytes>(Bytes(str.begin(), str.end()));
+        cache.put(file, i, ptr);
+    }
+    for (size_t i = 0; i < 10; ++i) {
+        auto data = cache.get(file, i);
+        if (data) {
+            cout << "get: " << i << ":" << data->data() << endl;
+        }
+    }
 }

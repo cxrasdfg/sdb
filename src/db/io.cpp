@@ -19,6 +19,7 @@ using DB::Const::BLOCK_SIZE;
 using DB::Type::Bytes;
 namespace bf = boost::filesystem;
 
+// ========= public =========
 void IO::create_file(const std::string &file_name) {
     std::string file_path = get_db_file_path(file_name);
     std::ifstream in(file_path);
@@ -54,6 +55,7 @@ void IO::write_block(const DB::Type::Bytes &data, size_t block_num){
 }
 
 DB::Type::Bytes IO::read_block(size_t block_num) {
+    // mmap read
     int fd = open(file_path.data(), O_RDWR);
     if (fd < 0) {
         throw std::runtime_error(
@@ -68,6 +70,7 @@ DB::Type::Bytes IO::read_block(size_t block_num) {
     Bytes bytes(buff, buff+BLOCK_SIZE);
     munmap(buff, BLOCK_SIZE);
     close(fd);
+
     return bytes;
 }
 

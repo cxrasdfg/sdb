@@ -10,7 +10,6 @@
 #include <functional>
 
 #include "util.h"
-#include "io.h"
 #include "record.h"
 
 struct BptNode {

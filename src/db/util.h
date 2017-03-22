@@ -7,6 +7,7 @@
 
 #include <stdexcept>
 #include <vector>
+#include <memory>
 #include <cstring>
 #include <string>
 #include <iostream>
@@ -38,6 +39,8 @@ namespace DB {
         const size_t INT_SIZE = sizeof(int32_t);
         const size_t FLOAT_SIZE = sizeof(float);
         const size_t POS_SIZE = sizeof(size_t);
+
+        const size_t CACHE_COUNT = 100;
     }
 
     namespace Type {

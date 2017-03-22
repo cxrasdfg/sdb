@@ -19,6 +19,7 @@ public:
     using CacheKey = std::string;
     using KeyLst = std::list<CacheKey>;
     using CountLst = std::list<std::pair<size_t, KeyLst>>;
+    using KeyPair = std::pair<std::string, size_t>;
 
     // struct
     struct CacheValue {
@@ -31,20 +32,21 @@ public:
                 :ptr(ptr), count_iter(count_iter), key_iter(key_iter){}
     };
 
-    Cache(size_t max_block_count):max_block_count(max_block_count){}
-
-    BytesPtr get(const std::string &path, size_t block_num);
-    void put(const std::string &path, size_t block_num, BytesPtr ptr);
-    // get data
-    std::list<CacheValue> get_data()const;
-
-private:
-    size_t max_block_count;
-    CountLst count_lst;
-    std::unordered_map<CacheKey, CacheValue> data;
+    // get and put
+    static Bytes get(const std::string &path, size_t block_num);
+    static void put(const std::string &path, size_t block_num, const Bytes &bytes);
+    // block io
+    static Bytes read_block(const std::string &path, size_t block_num);
+    static void write_block(const std::string &path, size_t block_num, const Bytes &bytes);
 
 private:
-    CacheKey generate_key(const std::string &path, size_t block_num);
+    static CountLst count_lst;
+    static std::unordered_map<CacheKey, CacheValue> data;
+
+private:
+    static CacheKey encode_key(const std::string &path, size_t block_num);
+    static KeyPair decode_key(const std::string &key);
+    static void write_back(const std::string &path, size_t block_num, const Bytes &bytes);
 };
 
 #endif //MAIN_CACHE_H

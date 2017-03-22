@@ -1,8 +1,10 @@
-#include "record.h"
-#include "io.h"
-#include "util.h"
 #include <map>
 #include <functional>
+
+#include "record.h"
+#include "util.h"
+#include "cache.h"
+#include "io.h"
 
 using DB::Type::Pos;
 using DB::Type::Bytes ;
@@ -18,10 +20,9 @@ Record::TupleLst Record::read_record(const DB::Type::PosList &pos_lst) {
         size_t offset = item % BLOCK_SIZE;
         block_offsets_map[block_num].push_back(offset);
     }
-    IO io(record_path);
     TupleLst tuple_lst(property.tuple_property);
     for (auto &&item: block_offsets_map) {
-        DB::Type::Bytes data_block = io.read_block(item.first);
+        DB::Type::Bytes data_block = Cache::read_block(record_path, item.first);
         for (auto offset : item.second) {
             Tuple tuple = bytes_to_tuple(property, data_block.data(), offset);
             tuple_lst.tuple_lst.push_back(tuple);
@@ -38,8 +39,7 @@ Record::TupleLst Record::read_record(size_t block_num) {
         }
         throw std::runtime_error("Error: [read_record] block error");
     }
-    IO io(record_path);
-    Bytes bytes = io.read_block(block_num);
+    Bytes bytes = Cache::read_block(record_path, block_num);
     size_t offset = 0;
     while (offset != BLOCK_SIZE) {
         if (offset > BLOCK_SIZE) {
@@ -82,8 +82,7 @@ void Record::write_record(size_t block_num, const TupleLst &tuple_lst) {
     if (offset != BLOCK_SIZE) {
         throw std::runtime_error("Error: [write_record] offset error");
     }
-    IO io(record_path);
-    io.write_file(block_data);
+    Cache::write_block(record_path, block_num, block_data);
 }
 
 void Record::update(const std::string &pred_col_name, DB::Type::BVFunc bvFunc,
@@ -111,10 +110,10 @@ DB::Type::Pos Record::insert_record(const DB::Type::Bytes &data) {
     size_t pos = get_free_pos(data.size());
     size_t block_num = pos / BLOCK_SIZE;
     size_t offset = pos % BLOCK_SIZE;
-    IO io(record_path);
-    Bytes block_data = io.read_block(block_num);
+    Cache cache;
+    Bytes block_data = cache.read_block(record_path, block_num);
     std::memcpy(block_data.data()+offset, data.data(), data.size());
-    io.write_block(block_data, block_num);
+    cache.write_block(record_path, block_num, block_data);
     return pos;
 }
 
@@ -122,9 +121,8 @@ void Record::remove_record(DB::Type::Pos pos) {
     if (free_pos_lst.find(pos) != free_pos_lst.end()) {
         return;
     }
-    IO io(record_path);
     size_t block_num = pos / BLOCK_SIZE;
-    Bytes bytes = io.read_block(block_num);
+    Bytes bytes = Cache::read_block(record_path, block_num);
     size_t start = pos % BLOCK_SIZE;
     size_t offset = pos % BLOCK_SIZE;
     bytes_to_tuple(property, bytes.data(), offset);
@@ -133,7 +131,6 @@ void Record::remove_record(DB::Type::Pos pos) {
 
 Record::TupleLst Record::find(const std::string &col_name, std::function<bool(Value)> predicate) {
     TupleLst tuple_lst(property.tuple_property);
-    IO io(property.table_name+"_record.sdb");
     for (size_t i = 0; i <= end_block_num; ++i) {
         TupleLst block_tuple_lst = read_record(i);
         for (auto &&tuple: block_tuple_lst.tuple_lst) {

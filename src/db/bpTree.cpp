@@ -6,9 +6,10 @@
 #include <boost/variant.hpp>
 
 #include "util.h"
-#include "io.h"
 #include "record.h"
 #include "bpTree.h"
+#include "cache.h"
+#include "io.h"
 
 using DB::Const::BLOCK_SIZE;
 using DB::Type::Bytes;
@@ -38,7 +39,6 @@ void BpTree::clear() {
 }
 
 void BpTree::write_info_block() {
-    IO io(table_property.table_name+"_meta_index.sdb");
     Bytes data(BLOCK_SIZE);
     // root pos
     size_t Pos_len = sizeof(root_pos);
@@ -52,6 +52,7 @@ void BpTree::write_info_block() {
         std::memcpy(beg+(j*Pos_len), &free_pos_list[j], Pos_len);
     }
     std::memcpy(beg+(free_pos_count*Pos_len), &free_end_pos, Pos_len);
+    IO io(table_property.table_name+"_meta_index.sdb");
     io.write_file(data);
 }
 
@@ -150,8 +151,7 @@ BpTree::nodePtrType BpTree::read(DB::Type::Pos pos) const{
     if (free_end_pos == 0) {
         return nullptr;
     }
-    IO io(table_property.table_name+"_index.sdb");
-    Bytes block_data = io.read_block(pos / BLOCK_SIZE);
+    Bytes block_data = Cache::read_block(table_property.table_name+"_index.sdb", pos / BLOCK_SIZE);
 
     // ptr
     nodePtrType ptr = std::make_shared<BptNode>();
@@ -208,7 +208,6 @@ void BpTree::write(nodePtrType ptr) {
     if (is_leaf) {
         std::memcpy(beg+offset, &ptr->end_pos, key_len);
     }
-    IO io(table_property.table_name+"_index.sdb");
     Pos write_pos;
     if (!ptr->is_new_node) {
         write_pos = ptr->file_pos;
@@ -221,7 +220,7 @@ void BpTree::write(nodePtrType ptr) {
     }
     ptr->file_pos = write_pos;
     size_t block_num = write_pos / BLOCK_SIZE;
-    io.write_block(block_data, block_num);
+    Cache::write_block(table_property.table_name+"_index.sdb", block_num, block_data);
 }
 
 void BpTree::print()const{

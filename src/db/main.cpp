@@ -13,6 +13,7 @@
 #include "util.h"
 #include "bpTree.h"
 #include "cache.h"
+#include "io.h"
 
 using std::cout;
 using std::endl;
@@ -26,6 +27,8 @@ using DB::Type::TableProperty;
 using DB::Enum::ColType;
 using DB::Type::Int;
 
+using namespace DB;
+
 DB::Type::TableProperty get_table_property();
 void bpt_test();
 void io_test();
@@ -37,12 +40,12 @@ void cache_test();
 int main(void) {
     clock_t start = clock();
 //    io_test();
-//    Table::drop_table("test");
-//    table_init_test();
+    Table::drop_table("test");
+    table_init_test();
 //    bpt_test();
-//    table_test();
-//r   record_test();
-    cache_test();
+    table_test();
+//    record_test();
+    //cache_test();
     std::cout << "time:" << (double)((clock()-start))/CLOCKS_PER_SEC << std::endl;
     return 0;
 }
@@ -195,28 +198,26 @@ void record_test(){
 }
 
 void cache_test() {
-    Cache cache(4);
+    Cache cache;
     auto file = "test";
-    for (size_t i = 0; i < 4; ++i) {
+    for (size_t i = 0; i < 10; ++i) {
         auto str = std::to_string(i);
-        auto ptr = std::make_shared<Bytes>(Bytes(str.begin(), str.end()));
-        cache.put(file, i, ptr);
+        cache.put(file, i, Bytes(str.begin(), str.end()));
     }
-    for (size_t i = 0; i < 4; ++i) {
+    for (size_t i = 0; i < 5; ++i) {
         auto data = cache.get(file, i);
-        if (data) {
-            cout << "get: " << i << ":" << data->data() << endl;
+        if (!data.empty()) {
+            Function::bytes_print(data);
         }
     }
-    for (size_t i = 0; i < 10; ++i) {
+    for (size_t i = 0; i < 15; ++i) {
         auto str = std::to_string(i);
-        auto ptr = std::make_shared<Bytes>(Bytes(str.begin(), str.end()));
-        cache.put(file, i, ptr);
+        cache.put(file, i, Bytes(str.begin(), str.end()));
     }
-    for (size_t i = 0; i < 10; ++i) {
+    for (size_t i = 0; i < 15; ++i) {
         auto data = cache.get(file, i);
-        if (data) {
-            cout << "get: " << i << ":" << data->data() << endl;
+        if (!data.empty()) {
+            Function::bytes_print(data);
         }
     }
 }

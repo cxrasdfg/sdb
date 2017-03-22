@@ -23,7 +23,6 @@ using DB::Type::TupleProperty;
 using DB::Enum::ColType;
 using namespace DB::Const;
 
-
 // SQL
 void Table::insert(const Tuple &tuple) {
     auto bytes = Record::tuple_to_bytes(tuple);
@@ -111,7 +110,6 @@ void Table::create_table(const DB::Type::TableProperty &property) {
     write_meta_data(property);
 
     // meta_index.sdb
-    IO io(property.table_name+"_meta_index.sdb");
     Bytes bytes(POS_SIZE+SIZE_SIZE+SIZE_SIZE);
     size_t root_pos = 0;
     size_t free_pos_count = 0;
@@ -119,10 +117,10 @@ void Table::create_table(const DB::Type::TableProperty &property) {
     std::memcpy(bytes.data(), &root_pos, POS_SIZE);
     std::memcpy(bytes.data()+SIZE_SIZE, &free_pos_count, SIZE_SIZE);
     std::memcpy(bytes.data()+SIZE_SIZE+SIZE_SIZE, &free_end_pos, SIZE_SIZE);
+    IO io(property.table_name+"_meta_index.sdb");
     io.write_file(bytes);
 
     // meta_record
-    IO record_io(property.table_name+"_meta_record.sdb");
     Bytes record_bytes;
     Bytes pos_count_bytes = DB::Function::en_bytes(size_t(1));
     record_bytes.insert(record_bytes.end(), pos_count_bytes.begin(), pos_count_bytes.end());
@@ -132,6 +130,7 @@ void Table::create_table(const DB::Type::TableProperty &property) {
     record_bytes.insert(record_bytes.end(), size_bytes.begin(), size_bytes.end());
     Bytes end_block_bytes = DB::Function::en_bytes(size_t(0));
     record_bytes.insert(record_bytes.end(), end_block_bytes.begin(), end_block_bytes.end());
+    IO record_io(property.table_name+"_meta_record.sdb");
     record_io.write_file(record_bytes);
     // index and record file
     IO::create_file(property.table_name+"_record.sdb");
@@ -167,7 +166,7 @@ void Table::read_meta_data(const std::string &table_name) {
     size_t col_count;
     std::memcpy(&col_count, beg+offset, size_len);
     offset += size_len;
-    for (int i = 0; i < col_count; ++i) {
+    for (size_t i = 0; i < col_count; ++i) {
         // cal name
         size_t col_name_size;
         std::memcpy(&col_name_size, beg+offset, size_len);

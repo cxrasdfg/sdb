@@ -20,12 +20,12 @@ public:
 
     //
     Table()= delete;
-    Table(const std::string &table_name){
-        read_meta_data(table_name);
+    Table(const std::string &db_name, const std::string &table_name){
+        read_meta_data(db_name, table_name);
     }
     // sql
     static void create_table(const DB::Type::TableProperty &property);
-    static void drop_table(const std::string &table_name);
+    static void drop_table(const TableProperty &property);
     void insert(const Tuple &tuple);
     void remove(const std::string &col_name, const Value &value);
     void remove(const std::string &col_name, DB::Type::BVFunc predicate);
@@ -35,12 +35,15 @@ public:
     TupleLst find(const std::string &col_name, std::function<bool(Value)> predicate);
 
 private:
-    DB::Type::TableProperty property;
+    //function
+    static std::string get_table_meta_path(const TableProperty &property);
 
-    void read_meta_data(const std::string &table_name);
+    void read_meta_data(const std::string &db_name, const std::string &table_name);
     static void write_meta_data(const DB::Type::TableProperty &property);
     bool is_has_index(const std::string &col_name);
 
+private:
+    DB::Type::TableProperty property;
 };
 
 #endif

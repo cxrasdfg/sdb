@@ -54,6 +54,7 @@ public:
     using PosList = DB::Type::PosList;
     using nodePtrType = std::shared_ptr<BptNode>;
     using nodePosLstType = typename BptNode::PoslstType;
+    using TableProperty = DB::Type::TableProperty;
 //    using nodeLstItemType = typename BptNode<Value, Bytes>::lstItemType;
 //    using nodeLstType = typename BptNode<Value, Bytes>::lstType;
 
@@ -82,6 +83,8 @@ public:
 
     // debug log
     void print()const;
+    static void create(const TableProperty &property);
+    static void drop(const TableProperty &property);
 
 private:
 //    nodePtrType root;
@@ -115,6 +118,10 @@ private:
                         nodePosLstType::const_iterator beg_iter,
                         nodePosLstType::const_iterator end_iter,
                         std::function<bool(Value)> predicate)const;
+    // get
+    static std::string get_index_path(const TableProperty &property);
+    static std::string get_index_meta_path(const TableProperty &property);
+
     // === 异常处理 ===
     void throw_error(const std::string &str)const{
         throw std::runtime_error(str);

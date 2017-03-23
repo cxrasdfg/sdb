@@ -48,15 +48,20 @@ public:
     static Tuple bytes_to_tuple(const TableProperty &property, const Byte *base, size_t &offset);
     static Value bytes_to_value(DB::Enum::ColType type, const Byte *base, size_t &offset);
     static Bytes value_to_bytes(const Value &value);
+
+    // create and drop
+    static void create(const TableProperty &property);
+    static void drop(const TableProperty &property);
+
 private:
     void read_meta_data();
     void write_meta_data();
+    static std::string get_record_path(const TableProperty &property);
+    static std::string get_record_meta_path(const TableProperty &property);
 
 private:
     DB::Type::TableProperty property;
     std::map<DB::Type::Pos, size_t> free_pos_lst;
     size_t end_block_num;
-    std::string record_path;
-    std::string record_meta_path;
 };
 #endif //MAIN_RECORD_H

@@ -107,50 +107,36 @@ Record::TupleLst Table::find(const std::string &col_name, std::function<bool(Val
 
 void Table::create_table(const DB::Type::TableProperty &property) {
     // table meta
+    // create dir
+    IO::create_dir(property.db_name);
+    IO::create_dir(property.db_name+"/"+property.table_name);
     write_meta_data(property);
 
-    // meta_index.sdb
-    Bytes bytes(POS_SIZE+SIZE_SIZE+SIZE_SIZE);
-    size_t root_pos = 0;
-    size_t free_pos_count = 0;
-    size_t free_end_pos = 0;
-    std::memcpy(bytes.data(), &root_pos, POS_SIZE);
-    std::memcpy(bytes.data()+SIZE_SIZE, &free_pos_count, SIZE_SIZE);
-    std::memcpy(bytes.data()+SIZE_SIZE+SIZE_SIZE, &free_end_pos, SIZE_SIZE);
-    IO io(property.table_name+"_meta_index.sdb");
-    io.write_file(bytes);
+    //index
+    Record::create(property);
 
-    // meta_record
-    Bytes record_bytes;
-    Bytes pos_count_bytes = DB::Function::en_bytes(size_t(1));
-    record_bytes.insert(record_bytes.end(), pos_count_bytes.begin(), pos_count_bytes.end());
-    Bytes pos_bytes = DB::Function::en_bytes(DB::Type::Pos(0));
-    record_bytes.insert(record_bytes.end(), pos_bytes.begin(), pos_bytes.end());
-    Bytes size_bytes = DB::Function::en_bytes(size_t(BLOCK_SIZE));
-    record_bytes.insert(record_bytes.end(), size_bytes.begin(), size_bytes.end());
-    Bytes end_block_bytes = DB::Function::en_bytes(size_t(0));
-    record_bytes.insert(record_bytes.end(), end_block_bytes.begin(), end_block_bytes.end());
-    IO record_io(property.table_name+"_meta_record.sdb");
-    record_io.write_file(record_bytes);
-    // index and record file
-    IO::create_file(property.table_name+"_record.sdb");
-    IO::create_file(property.table_name+"_index.sdb");
+    //record
+    BpTree::create(property);
 }
 
-void Table::drop_table(const std::string &table_name) {
-    IO::delete_file(table_name+"_meta.sdb");
-    IO::delete_file(table_name+"_meta_index.sdb");
-    IO::delete_file(table_name+"_index.sdb");
-    IO::delete_file(table_name+"_meta_record.sdb");
-    IO::delete_file(table_name+"_record.sdb");
+void Table::drop_table(const TableProperty &property) {
+    IO::delete_file(get_table_meta_path(property));
+    // index
+    BpTree::drop(property);
+    //record
+    Record::drop(property);
+    // drop dir
+    IO::remove_dir(property.db_name+"/"+property.table_name);
+    IO::remove_dir(property.db_name);
 }
 
 // ========= private ========
-void Table::read_meta_data(const std::string &table_name) {
+void Table::read_meta_data(const std::string &db_name, const std::string &table_name) {
     // --- read table name key map ---
 
+    property.db_name = db_name;
     property.table_name = table_name;
-    IO io(table_name+"_meta.sdb");
+    IO io(get_table_meta_path(property));
     Bytes bytes = io.read_file();
     auto beg = bytes.data();
     size_t offset = 0;
@@ -208,10 +194,15 @@ void Table::write_meta_data(const DB::Type::TableProperty &property) {
         Bytes type_size_bytes = DB::Function::en_bytes(item.type_size);
         bytes.insert(bytes.end(), type_size_bytes.begin(), type_size_bytes.end());
     }
-    IO io(property.table_name+"_meta.sdb");
+    IO io(get_table_meta_path(property));
     io.write_file(bytes);
 }
 
 bool Table::is_has_index(const std::string &col_name) {
     return col_name == property.key;
+}
+
+// ========== private function ========
+std::string Table::get_table_meta_path(const TableProperty &property) {
+    return property.db_name + "/" + property.table_name + "/meta.sdb";
 }

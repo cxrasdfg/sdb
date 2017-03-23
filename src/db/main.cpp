@@ -40,7 +40,7 @@ void cache_test();
 int main(void) {
     clock_t start = clock();
 //    io_test();
-    Table::drop_table("test");
+    Table::drop_table(get_table_property());
     table_init_test();
 //    bpt_test();
     table_test();
@@ -57,7 +57,7 @@ DB::Type::TableProperty get_table_property(){
     TupleProperty col_property;
     col_property.property_lst.push_back(tuple);
     col_property.property_lst.push_back(tuple2);
-    return TableProperty("test", "col_1", col_property);
+    return TableProperty("test", "test", "col_1", col_property);
 }
 
 void bpt_test() {
@@ -136,7 +136,7 @@ void table_test(){
     using DB::Function::get_bvfunc;
     using DB::Enum::INT;
     //insert test
-    Table table("test");
+    Table table("test", "test");
     // insert test
     for (Int i = 0; i < 1000; ++i) {
         DB::Type::Tuple tuple;

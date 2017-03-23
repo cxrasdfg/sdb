@@ -230,15 +230,17 @@ namespace DB {
 
         struct TableProperty {
             // Type
+            std::string db_name;
             std::string table_name;
             std::string key;
             TupleProperty tuple_property;
 
             TableProperty(){}
-            TableProperty(const std::string &table_name,
+            TableProperty(const std::string &db_name,
+                          const std::string &table_name,
                           const std::string &key,
                           const TupleProperty &col_property)
-                    :table_name(table_name), key(key), tuple_property(col_property){}
+                    :db_name(db_name), table_name(table_name), key(key), tuple_property(col_property){}
         };
 
         struct Tuple {

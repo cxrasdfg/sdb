@@ -106,7 +106,7 @@ size_t IO::get_file_size() const {
 
 std::string IO::get_db_file_dir_path() {
     auto dir_path = bf::path(__FILE__).parent_path();
-    std::string file_path = dir_path.generic_string()+"/db_file";
+    std::string file_path = dir_path.generic_string()+"/data";
     return file_path;
 }
 
@@ -114,4 +114,12 @@ std::string IO::get_db_file_path(const std::string &file_name) {
     using namespace DB::Enum;
     std::string file_path = get_db_file_dir_path();
     return file_path + '/' + file_name;
+}
+
+void IO::create_dir(const std::string &dir_path) {
+    bf::create_directories(get_db_file_dir_path()+"/"+dir_path);
+}
+
+void IO::remove_dir(const std::string &dir_path) {
+    bf::remove(get_db_file_dir_path()+"/"+dir_path);
 }

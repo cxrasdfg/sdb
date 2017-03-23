@@ -22,7 +22,7 @@ Record::TupleLst Record::read_record(const DB::Type::PosList &pos_lst) {
     }
     TupleLst tuple_lst(property.tuple_property);
     for (auto &&item: block_offsets_map) {
-        DB::Type::Bytes data_block = Cache::read_block(record_path, item.first);
+        DB::Type::Bytes data_block = Cache::read_block(get_record_path(property), item.first);
         for (auto offset : item.second) {
             Tuple tuple = bytes_to_tuple(property, data_block.data(), offset);
             tuple_lst.tuple_lst.push_back(tuple);
@@ -39,7 +39,7 @@ Record::TupleLst Record::read_record(size_t block_num) {
         }
         throw std::runtime_error("Error: [read_record] block error");
     }
-    Bytes bytes = Cache::read_block(record_path, block_num);
+    Bytes bytes = Cache::read_block(get_record_path(property), block_num);
     size_t offset = 0;
     while (offset != BLOCK_SIZE) {
         if (offset > BLOCK_SIZE) {
@@ -82,7 +82,7 @@ void Record::write_record(size_t block_num, const TupleLst &tuple_lst) {
     if (offset != BLOCK_SIZE) {
         throw std::runtime_error("Error: [write_record] offset error");
     }
-    Cache::write_block(record_path, block_num, block_data);
+    Cache::write_block(get_record_path(property), block_num, block_data);
 }
 
 void Record::update(const std::string &pred_col_name, DB::Type::BVFunc bvFunc,
@@ -111,9 +111,9 @@ DB::Type::Pos Record::insert_record(const DB::Type::Bytes &data) {
     size_t block_num = pos / BLOCK_SIZE;
     size_t offset = pos % BLOCK_SIZE;
     Cache cache;
-    Bytes block_data = cache.read_block(record_path, block_num);
+    Bytes block_data = cache.read_block(get_record_path(property), block_num);
     std::memcpy(block_data.data()+offset, data.data(), data.size());
-    cache.write_block(record_path, block_num, block_data);
+    cache.write_block(get_record_path(property), block_num, block_data);
     return pos;
 }
 
@@ -122,7 +122,7 @@ void Record::remove_record(DB::Type::Pos pos) {
         return;
     }
     size_t block_num = pos / BLOCK_SIZE;
-    Bytes bytes = Cache::read_block(record_path, block_num);
+    Bytes bytes = Cache::read_block(get_record_path(property), block_num);
     size_t start = pos % BLOCK_SIZE;
     size_t offset = pos % BLOCK_SIZE;
     bytes_to_tuple(property, bytes.data(), offset);
@@ -213,11 +213,32 @@ Bytes Record::value_to_bytes(const Value &value) {
     return bytes;
 }
 
+void Record::create(const TableProperty &property) {
+    // meta_record
+    Bytes record_bytes;
+    Bytes pos_count_bytes = DB::Function::en_bytes(size_t(1));
+    record_bytes.insert(record_bytes.end(), pos_count_bytes.begin(), pos_count_bytes.end());
+    Bytes pos_bytes = DB::Function::en_bytes(DB::Type::Pos(0));
+    record_bytes.insert(record_bytes.end(), pos_bytes.begin(), pos_bytes.end());
+    Bytes size_bytes = DB::Function::en_bytes(size_t(BLOCK_SIZE));
+    record_bytes.insert(record_bytes.end(), size_bytes.begin(), size_bytes.end());
+    Bytes end_block_bytes = DB::Function::en_bytes(size_t(0));
+    record_bytes.insert(record_bytes.end(), end_block_bytes.begin(), end_block_bytes.end());
+    IO record_io(get_record_meta_path(property));
+    record_io.write_file(record_bytes);
+
+    // record
+    IO::create_file(get_record_path(property));
+}
+
+void Record::drop(const TableProperty &property) {
+    IO::delete_file(get_record_path(property));
+    IO::delete_file(get_record_meta_path(property));
+}
+
 // ========== private =========
 void Record::read_meta_data() {
-    record_path = property.table_name+"_record.sdb";
-    record_meta_path = property.table_name+"_meta_record.sdb";
-    IO io(record_meta_path);
+    IO io(get_record_meta_path(property));
     DB::Type::Bytes block_data = io.read_file();
     size_t pos_count;
     std::memcpy(&pos_count, block_data.data(), SIZE_SIZE);
@@ -246,6 +267,14 @@ void Record::write_meta_data() {
     }
     Bytes block_num = DB::Function::en_bytes(end_block_num);
     bytes.insert(bytes.end(), block_num.begin(), block_num.end());
-    IO io(record_meta_path);
+    IO io(get_record_meta_path(property));
     io.write_file(bytes);
+}
+
+std::string Record::get_record_path(const TableProperty &property) {
+    return property.db_name + "/" + property.table_name+"/record.sdb";
+}
+
+std::string Record::get_record_meta_path(const TableProperty &property) {
+    return property.db_name + "/" + property.table_name+"/record_meta.sdb";
 }

@@ -17,17 +17,17 @@ Cache::Bytes Cache::get(const std::string &path, size_t block_num) {
     if (it == data.end()) {
         return Bytes();
     }
-    std::cout << "begin: ";
-    for (auto &&x : count_lst) {
-        std::cout << "count: " << x.first;
-        std::cout << " set: ";
-        for (auto &&y : x.second) {
-            std::cout << y << " ";
-        }
-    }
-    std::cout << std::endl;
-    std::cout << data.size() << std::endl;
-    std::cout << std::endl;
+//    std::cout << "begin: ";
+//    for (auto &&x : count_lst) {
+//        std::cout << "count: " << x.first;
+//        std::cout << " set: ";
+//        for (auto &&y : x.second) {
+//            std::cout << y << " ";
+//        }
+//    }
+//    std::cout << std::endl;
+//    std::cout << data.size() << std::endl;
+//    std::cout << std::endl;
     auto count_iter = it->second.count_iter;
     auto key_iter = it->second.key_iter;
     auto lst_it_next = std::next(count_iter);

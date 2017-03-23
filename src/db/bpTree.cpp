@@ -17,6 +17,8 @@ using DB::Type::Pos;
 using DB::Type::PosList;
 using DB::Type::Value;
 
+using namespace DB;
+
 
 // --------------- Function ---------------
 // ========== BptNode Function =========
@@ -52,7 +54,7 @@ void BpTree::write_info_block() {
         std::memcpy(beg+(j*Pos_len), &free_pos_list[j], Pos_len);
     }
     std::memcpy(beg+(free_pos_count*Pos_len), &free_end_pos, Pos_len);
-    IO io(table_property.table_name+"_meta_index.sdb");
+    IO io(get_index_meta_path(table_property));
     io.write_file(data);
 }
 
@@ -63,7 +65,7 @@ void BpTree::initialize() {
     size_t Pos_len = sizeof(size_t);
     node_key_count = (DB::Const::BLOCK_SIZE-Pos_len-1-size_len)/(key_size+Pos_len);
     // read info block
-    IO io(table_property.table_name+"_meta_index.sdb");
+    IO io(get_index_meta_path(table_property));
     Bytes block_data = io.read_file();
     // set root_pos
     std::memcpy(&root_pos, block_data.data(), Pos_len);
@@ -151,7 +153,7 @@ BpTree::nodePtrType BpTree::read(DB::Type::Pos pos) const{
     if (free_end_pos == 0) {
         return nullptr;
     }
-    Bytes block_data = Cache::read_block(table_property.table_name+"_index.sdb", pos / BLOCK_SIZE);
+    Bytes block_data = Cache::read_block(get_index_path(table_property), pos / BLOCK_SIZE);
 
     // ptr
     nodePtrType ptr = std::make_shared<BptNode>();
@@ -220,7 +222,26 @@ void BpTree::write(nodePtrType ptr) {
     }
     ptr->file_pos = write_pos;
     size_t block_num = write_pos / BLOCK_SIZE;
-    Cache::write_block(table_property.table_name+"_index.sdb", block_num, block_data);
+    Cache::write_block(get_index_path(table_property), block_num, block_data);
+}
+
+void BpTree::create(const TableProperty &property) {
+    // meta_index.sdb
+    using Const::SIZE_SIZE;
+    Bytes bytes(Const::POS_SIZE+Const::SIZE_SIZE+Const::SIZE_SIZE);
+    size_t root_pos = 0;
+    size_t free_pos_count = 0;
+    size_t free_end_pos = 0;
+    std::memcpy(bytes.data(), &root_pos, Const::POS_SIZE);
+    std::memcpy(bytes.data()+SIZE_SIZE, &free_pos_count, SIZE_SIZE);
+    std::memcpy(bytes.data()+SIZE_SIZE+SIZE_SIZE, &free_end_pos, SIZE_SIZE);
+    IO io(get_index_meta_path(property));
+    io.write_file(bytes);
+}
+
+void BpTree::drop(const TableProperty &property) {
+    IO::delete_file(get_index_path(property));
+    IO::delete_file(get_index_meta_path(property));
 }
 
 void BpTree::print()const{
@@ -535,4 +556,12 @@ void BpTree::pos_lst_insert(PosList &pos_lst,
             pos_lst.push_back(it->second);
         }
     }
+}
+
+std::string BpTree::get_index_path(const TableProperty &property) {
+    return property.db_name + "/" + property.table_name + "/index.sdb";
+}
+
+std::string BpTree::get_index_meta_path(const TableProperty &property) {
+    return property.db_name + "/" + property.table_name + "/index_meta.sdb";
 }

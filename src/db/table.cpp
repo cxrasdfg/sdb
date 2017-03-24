@@ -15,13 +15,13 @@
 
 using std::ios;
 using std::vector;
-using DB::Type::Pos;
-using DB::Type::PosList;
-using DB::Type::Bytes;
-using DB::Type::Value;
-using DB::Type::TupleProperty;
-using DB::Enum::ColType;
-using namespace DB::Const;
+using SDB::Type::Pos;
+using SDB::Type::PosList;
+using SDB::Type::Bytes;
+using SDB::Type::Value;
+using SDB::Type::TupleProperty;
+using SDB::Enum::ColType;
+using namespace SDB::Const;
 
 // SQL
 void Table::insert(const Tuple &tuple) {
@@ -30,11 +30,11 @@ void Table::insert(const Tuple &tuple) {
     bpTree.insert(tuple.get_col_value(property.tuple_property, property.key), bytes);
 }
 
-void Table::update(const std::string &pred_col_name, DB::Type::BVFunc predicate,
-                   const std::string &op_col_name, DB::Type::VVFunc op) {
+void Table::update(const std::string &pred_col_name, SDB::Type::BVFunc predicate,
+                   const std::string &op_col_name, SDB::Type::VVFunc op) {
     Record record(property);
     BpTree bpTree(property);
-    bool is_var_type = DB::Function::is_var_type(property.tuple_property.get_col_type(op_col_name));
+    bool is_var_type = SDB::Function::is_var_type(property.tuple_property.get_col_type(op_col_name));
     if (!is_has_index(pred_col_name) && !is_var_type) {
         record.update(pred_col_name, predicate, op_col_name, op);
         return;
@@ -79,14 +79,14 @@ void Table::remove(const std::string &col_name, std::function<bool(Value)> predi
     }
 }
 
-Table::TupleLst Table::find(const std::string &col_name, const DB::Type::Value &value) {
+Table::TupleLst Table::find(const std::string &col_name, const SDB::Type::Value &value) {
     Record record(property);
     if (col_name == property.key) {
         BpTree bpTree(property);
         PosList pos_lst = bpTree.find(value);
         return record.read_record(pos_lst);
     }
-    auto predicate = DB::Function::get_bvfunc(DB::Enum::EQ, value);
+    auto predicate = SDB::Function::get_bvfunc(SDB::Enum::EQ, value);
     return record.find(col_name, predicate);
 }
 
@@ -105,7 +105,7 @@ Record::TupleLst Table::find(const std::string &col_name, std::function<bool(Val
     return record.find(col_name, predicate);
 }
 
-void Table::create_table(const DB::Type::TableProperty &property) {
+void Table::create_table(const SDB::Type::TableProperty &property) {
     // table meta
     // create dir
     IO::create_dir(property.db_name);
@@ -172,26 +172,26 @@ void Table::read_meta_data(const std::string &db_name, const std::string &table_
     }
 }
 
-void Table::write_meta_data(const DB::Type::TableProperty &property) {
+void Table::write_meta_data(const SDB::Type::TableProperty &property) {
     // write table_name key map
 
     Bytes bytes;
     // key
-    Bytes key_size_bytes = DB::Function::en_bytes(property.key.size());
+    Bytes key_size_bytes = SDB::Function::en_bytes(property.key.size());
     bytes.insert(bytes.end(), key_size_bytes.begin(), key_size_bytes.end());
     bytes.insert(bytes.end(), property.key.begin(), property.key.end());
     //map
-    Bytes tuple_count_bytes = DB::Function::en_bytes(property.tuple_property.property_lst.size());
+    Bytes tuple_count_bytes = SDB::Function::en_bytes(property.tuple_property.property_lst.size());
     bytes.insert(bytes.end(), tuple_count_bytes.begin(), tuple_count_bytes.end());
     for (auto &&item : property.tuple_property.property_lst) {
         // col name
-        Bytes col_size_bytes = DB::Function::en_bytes(item.col_name.size());
+        Bytes col_size_bytes = SDB::Function::en_bytes(item.col_name.size());
         bytes.insert(bytes.end(), col_size_bytes.begin(), col_size_bytes.end());
         bytes.insert(bytes.end(), item.col_name.begin(), item.col_name.end());
         // type
         bytes.push_back(item.col_type);
         // type size
-        Bytes type_size_bytes = DB::Function::en_bytes(item.type_size);
+        Bytes type_size_bytes = SDB::Function::en_bytes(item.type_size);
         bytes.insert(bytes.end(), type_size_bytes.begin(), type_size_bytes.end());
     }
     IO io(get_table_meta_path(property));

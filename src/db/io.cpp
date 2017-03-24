@@ -15,8 +15,8 @@
 #include "util.h"
 
 using std::ios;
-using DB::Const::BLOCK_SIZE;
-using DB::Type::Bytes;
+using SDB::Const::BLOCK_SIZE;
+using SDB::Type::Bytes;
 namespace bf = boost::filesystem;
 
 // ========= public =========
@@ -34,7 +34,7 @@ void IO::delete_file(const std::string &file_name) {
     bool bl = bf::remove(get_db_file_path(file_name));
 }
 
-void IO::write_block(const DB::Type::Bytes &data, size_t block_num){
+void IO::write_block(const SDB::Type::Bytes &data, size_t block_num){
     if (data.size() != BLOCK_SIZE) {
         throw std::runtime_error("Error: data size not equal BLOCK_SIZE");
     }
@@ -54,7 +54,7 @@ void IO::write_block(const DB::Type::Bytes &data, size_t block_num){
     munmap(buff, BLOCK_SIZE);
 }
 
-DB::Type::Bytes IO::read_block(size_t block_num) {
+SDB::Type::Bytes IO::read_block(size_t block_num) {
     // mmap read
     int fd = open(file_path.data(), O_RDWR);
     if (fd < 0) {
@@ -74,7 +74,7 @@ DB::Type::Bytes IO::read_block(size_t block_num) {
     return bytes;
 }
 
-DB::Type::Bytes IO::read_file() {
+SDB::Type::Bytes IO::read_file() {
     std::ifstream in(file_path, std::ios::binary);
     if (!in.is_open()) {
         throw std::runtime_error(
@@ -87,7 +87,7 @@ DB::Type::Bytes IO::read_file() {
     return buffer_data;
 }
 
-void IO::write_file(const DB::Type::Bytes &data) {
+void IO::write_file(const SDB::Type::Bytes &data) {
     std::ofstream out(file_path, std::ios::binary);
     if (!out.is_open()) {
         throw std::runtime_error(
@@ -111,7 +111,7 @@ std::string IO::get_db_file_dir_path() {
 }
 
 std::string IO::get_db_file_path(const std::string &file_name) {
-    using namespace DB::Enum;
+    using namespace SDB::Enum;
     std::string file_path = get_db_file_dir_path();
     return file_path + '/' + file_name;
 }

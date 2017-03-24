@@ -6,14 +6,14 @@
 #include "cache.h"
 #include "io.h"
 
-using DB::Type::Pos;
-using DB::Type::Bytes ;
-using DB::Type::BytesList ;
-using DB::Const::BLOCK_SIZE;
-using DB::Const::SIZE_SIZE;
-using DB::Const::POS_SIZE;
+using SDB::Type::Pos;
+using SDB::Type::Bytes ;
+using SDB::Type::BytesList ;
+using SDB::Const::BLOCK_SIZE;
+using SDB::Const::SIZE_SIZE;
+using SDB::Const::POS_SIZE;
 
-Record::TupleLst Record::read_record(const DB::Type::PosList &pos_lst) {
+Record::TupleLst Record::read_record(const SDB::Type::PosList &pos_lst) {
     std::map<size_t, std::vector<size_t>> block_offsets_map;
     for (auto &&item : pos_lst) {
         size_t block_num = item / BLOCK_SIZE;
@@ -22,7 +22,7 @@ Record::TupleLst Record::read_record(const DB::Type::PosList &pos_lst) {
     }
     TupleLst tuple_lst(property.tuple_property);
     for (auto &&item: block_offsets_map) {
-        DB::Type::Bytes data_block = Cache::read_block(get_record_path(property), item.first);
+        SDB::Type::Bytes data_block = Cache::read_block(get_record_path(property), item.first);
         for (auto offset : item.second) {
             Tuple tuple = bytes_to_tuple(property, data_block.data(), offset);
             tuple_lst.tuple_lst.push_back(tuple);
@@ -85,8 +85,8 @@ void Record::write_record(size_t block_num, const TupleLst &tuple_lst) {
     Cache::write_block(get_record_path(property), block_num, block_data);
 }
 
-void Record::update(const std::string &pred_col_name, DB::Type::BVFunc bvFunc,
-                    const std::string &op_col_name, DB::Type::VVFunc vvFunc) {
+void Record::update(const std::string &pred_col_name, SDB::Type::BVFunc bvFunc,
+                    const std::string &op_col_name, SDB::Type::VVFunc vvFunc) {
     size_t block_num = 0;
     while (block_num > end_block_num) {
         TupleLst tuple_lst = read_record(block_num);
@@ -103,7 +103,7 @@ Pos Record::update(Pos pos, const Bytes &data) {
     return insert_record(data);
 }
 
-DB::Type::Pos Record::insert_record(const DB::Type::Bytes &data) {
+SDB::Type::Pos Record::insert_record(const SDB::Type::Bytes &data) {
     if (data.size() > BLOCK_SIZE) {
         throw std::runtime_error("Error: data size greater BLOCK_SIZE");
     }
@@ -117,7 +117,7 @@ DB::Type::Pos Record::insert_record(const DB::Type::Bytes &data) {
     return pos;
 }
 
-void Record::remove_record(DB::Type::Pos pos) {
+void Record::remove_record(SDB::Type::Pos pos) {
     if (free_pos_lst.find(pos) != free_pos_lst.end()) {
         return;
     }
@@ -165,7 +165,7 @@ Pos Record::get_free_pos(size_t data_size) {
 }
 
 // tuple
-DB::Type::Bytes Record::tuple_to_bytes(const Tuple &tuple) {
+SDB::Type::Bytes Record::tuple_to_bytes(const Tuple &tuple) {
     Bytes bytes;
     for (auto &&value : tuple.value_lst) {
         Bytes value_bytes = value_to_bytes(value);
@@ -185,16 +185,16 @@ Record::Tuple Record::bytes_to_tuple(const TableProperty &property,
     return tuple;
 }
 
-Record::Value Record::bytes_to_value(DB::Enum::ColType type,
+Record::Value Record::bytes_to_value(SDB::Enum::ColType type,
                                      const Byte *base,
                                      size_t &offset) {
     Bytes bytes;
     size_t len;
     if (Value::is_var_type(type)) {
-        std::memcpy(&len, base+offset, DB::Const::SIZE_SIZE);
-        offset += DB::Const::SIZE_SIZE;
+        std::memcpy(&len, base+offset, SDB::Const::SIZE_SIZE);
+        offset += SDB::Const::SIZE_SIZE;
     } else {
-        len = DB::Function::get_type_len(type);
+        len = SDB::Function::get_type_len(type);
     }
     bytes.insert(bytes.end(), base+offset, base+offset+len);
     offset += len;
@@ -205,8 +205,8 @@ Bytes Record::value_to_bytes(const Value &value) {
     Bytes bytes;
     if (value.is_var_type()) {
         size_t len = value.data.size();
-        Bytes len_bytes(DB::Const::SIZE_SIZE);
-        std::memcpy(len_bytes.data(), &len, DB::Const::SIZE_SIZE);
+        Bytes len_bytes(SDB::Const::SIZE_SIZE);
+        std::memcpy(len_bytes.data(), &len, SDB::Const::SIZE_SIZE);
         bytes.insert(bytes.end(), len_bytes.begin(), len_bytes.end());
     }
     bytes.insert(bytes.end(), value.data.begin(), value.data.end());
@@ -216,13 +216,13 @@ Bytes Record::value_to_bytes(const Value &value) {
 void Record::create(const TableProperty &property) {
     // meta_record
     Bytes record_bytes;
-    Bytes pos_count_bytes = DB::Function::en_bytes(size_t(1));
+    Bytes pos_count_bytes = SDB::Function::en_bytes(size_t(1));
     record_bytes.insert(record_bytes.end(), pos_count_bytes.begin(), pos_count_bytes.end());
-    Bytes pos_bytes = DB::Function::en_bytes(DB::Type::Pos(0));
+    Bytes pos_bytes = SDB::Function::en_bytes(SDB::Type::Pos(0));
     record_bytes.insert(record_bytes.end(), pos_bytes.begin(), pos_bytes.end());
-    Bytes size_bytes = DB::Function::en_bytes(size_t(BLOCK_SIZE));
+    Bytes size_bytes = SDB::Function::en_bytes(size_t(BLOCK_SIZE));
     record_bytes.insert(record_bytes.end(), size_bytes.begin(), size_bytes.end());
-    Bytes end_block_bytes = DB::Function::en_bytes(size_t(0));
+    Bytes end_block_bytes = SDB::Function::en_bytes(size_t(0));
     record_bytes.insert(record_bytes.end(), end_block_bytes.begin(), end_block_bytes.end());
     IO record_io(get_record_meta_path(property));
     record_io.write_file(record_bytes);
@@ -239,7 +239,7 @@ void Record::drop(const TableProperty &property) {
 // ========== private =========
 void Record::read_meta_data() {
     IO io(get_record_meta_path(property));
-    DB::Type::Bytes block_data = io.read_file();
+    SDB::Type::Bytes block_data = io.read_file();
     size_t pos_count;
     std::memcpy(&pos_count, block_data.data(), SIZE_SIZE);
     auto beg = block_data.data()+SIZE_SIZE;
@@ -255,17 +255,17 @@ void Record::read_meta_data() {
 }
 
 void Record::write_meta_data() {
-    DB::Type::Bytes bytes;
+    SDB::Type::Bytes bytes;
     size_t lst_len = free_pos_lst.size();
-    Bytes lst_len_bytes = DB::Function::en_bytes(lst_len);
+    Bytes lst_len_bytes = SDB::Function::en_bytes(lst_len);
     bytes.insert(bytes.end(), lst_len_bytes.begin(), lst_len_bytes.end());
     for (auto &&item : free_pos_lst) {
-        Bytes pos_bytes = DB::Function::en_bytes(item.first);
-        Bytes size_bytes = DB::Function::en_bytes(item.second);
+        Bytes pos_bytes = SDB::Function::en_bytes(item.first);
+        Bytes size_bytes = SDB::Function::en_bytes(item.second);
         bytes.insert(bytes.end(), pos_bytes.begin(), pos_bytes.end());
         bytes.insert(bytes.end(), size_bytes.begin(), size_bytes.end());
     }
-    Bytes block_num = DB::Function::en_bytes(end_block_num);
+    Bytes block_num = SDB::Function::en_bytes(end_block_num);
     bytes.insert(bytes.end(), block_num.begin(), block_num.end());
     IO io(get_record_meta_path(property));
     io.write_file(bytes);

@@ -11,13 +11,13 @@
 #include "cache.h"
 #include "io.h"
 
-using DB::Const::BLOCK_SIZE;
-using DB::Type::Bytes;
-using DB::Type::Pos;
-using DB::Type::PosList;
-using DB::Type::Value;
+using SDB::Const::BLOCK_SIZE;
+using SDB::Type::Bytes;
+using SDB::Type::Pos;
+using SDB::Type::PosList;
+using SDB::Type::Value;
 
-using namespace DB;
+using namespace SDB;
 
 
 // --------------- Function ---------------
@@ -28,7 +28,7 @@ Value BptNode::last_key()const{
 
 // ========== BpTree Function =========
 // ---------- BpTree Public Function ---------
-BpTree::BpTree(const DB::Type::TableProperty &table_property):table_property(table_property){
+BpTree::BpTree(const SDB::Type::TableProperty &table_property):table_property(table_property){
     initialize();
 }
 
@@ -63,7 +63,7 @@ void BpTree::initialize() {
     size_t size_len = sizeof(size_t);
     size_t key_size = table_property.tuple_property.get_type_size(table_property.key);
     size_t Pos_len = sizeof(size_t);
-    node_key_count = (DB::Const::BLOCK_SIZE-Pos_len-1-size_len)/(key_size+Pos_len);
+    node_key_count = (SDB::Const::BLOCK_SIZE-Pos_len-1-size_len)/(key_size+Pos_len);
     // read info block
     IO io(get_index_meta_path(table_property));
     Bytes block_data = io.read_file();
@@ -149,7 +149,7 @@ void BpTree::update(const Value &key, const Bytes &data) {
     }
 }
 
-BpTree::nodePtrType BpTree::read(DB::Type::Pos pos) const{
+BpTree::nodePtrType BpTree::read(SDB::Type::Pos pos) const{
     if (free_end_pos == 0) {
         return nullptr;
     }
@@ -189,8 +189,8 @@ BpTree::nodePtrType BpTree::read(DB::Type::Pos pos) const{
 }
 
 void BpTree::write(nodePtrType ptr) {
-    using DB::Function::en_bytes;
-    Bytes block_data(DB::Const::BLOCK_SIZE);
+    using SDB::Function::en_bytes;
+    Bytes block_data(SDB::Const::BLOCK_SIZE);
     size_t key_len = table_property.tuple_property.get_type_size(table_property.key);
     size_t item_len = key_len + sizeof(size_t);
     size_t size_len = sizeof(size_t);
@@ -237,6 +237,8 @@ void BpTree::create(const TableProperty &property) {
     std::memcpy(bytes.data()+SIZE_SIZE+SIZE_SIZE, &free_end_pos, SIZE_SIZE);
     IO io(get_index_meta_path(property));
     io.write_file(bytes);
+    // index
+    IO::create_file(get_index_path(property));
 }
 
 void BpTree::drop(const TableProperty &property) {

@@ -10,17 +10,17 @@
 class Record {
 public:
     // type
-    using Pos = DB::Type::Pos ;
-    using PosList = DB::Type::PosList;
-    using Byte = DB::Type::Byte;
-    using Bytes = DB::Type::Bytes;
-    using Value = DB::Type::Value;
-    using Tuple = DB::Type::Tuple;
-    using TupleLst = DB::Type::TupleLst;
-    using TableProperty = DB::Type::TableProperty;
+    using Pos = SDB::Type::Pos ;
+    using PosList = SDB::Type::PosList;
+    using Byte = SDB::Type::Byte;
+    using Bytes = SDB::Type::Bytes;
+    using Value = SDB::Type::Value;
+    using Tuple = SDB::Type::Tuple;
+    using TupleLst = SDB::Type::TupleLst;
+    using TableProperty = SDB::Type::TableProperty;
 
     Record()= delete;
-    Record(const DB::Type::TableProperty &property):property(property){
+    Record(const SDB::Type::TableProperty &property):property(property){
         read_meta_data();
     }
     ~Record(){
@@ -28,14 +28,14 @@ public:
     }
 
     // record
-    TupleLst read_record(const DB::Type::PosList &pos_lst);
+    TupleLst read_record(const SDB::Type::PosList &pos_lst);
     TupleLst read_record(size_t block_num);
     void write_record(size_t block_num, const TupleLst &tuple_lst);
-    DB::Type::Pos insert_record(const DB::Type::Bytes &data);
-    void remove_record(DB::Type::Pos pos);
+    SDB::Type::Pos insert_record(const SDB::Type::Bytes &data);
+    void remove_record(SDB::Type::Pos pos);
     // only non-variable column data
-    void update(const std::string &pred_col_name, DB::Type::BVFunc bvFunc, const std::string &op_col_name,
-                DB::Type::VVFunc vvFunc);
+    void update(const std::string &pred_col_name, SDB::Type::BVFunc bvFunc, const std::string &op_col_name,
+                SDB::Type::VVFunc vvFunc);
     Pos update(Pos pos, const Bytes &data);
     TupleLst find(const std::string &col_name, std::function<bool(Value)> predicate);
 
@@ -44,9 +44,9 @@ public:
 
     // value_lst
     // convert
-    static DB::Type::Bytes tuple_to_bytes(const Tuple &tuple);
+    static SDB::Type::Bytes tuple_to_bytes(const Tuple &tuple);
     static Tuple bytes_to_tuple(const TableProperty &property, const Byte *base, size_t &offset);
-    static Value bytes_to_value(DB::Enum::ColType type, const Byte *base, size_t &offset);
+    static Value bytes_to_value(SDB::Enum::ColType type, const Byte *base, size_t &offset);
     static Bytes value_to_bytes(const Value &value);
 
     // create and drop
@@ -60,8 +60,8 @@ private:
     static std::string get_record_meta_path(const TableProperty &property);
 
 private:
-    DB::Type::TableProperty property;
-    std::map<DB::Type::Pos, size_t> free_pos_lst;
+    SDB::Type::TableProperty property;
+    std::map<SDB::Type::Pos, size_t> free_pos_lst;
     size_t end_block_num;
 };
 #endif //MAIN_RECORD_H

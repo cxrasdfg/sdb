@@ -3,7 +3,7 @@
 #include <initializer_list>
 #include "util.h"
 
-namespace DB {
+namespace SDB {
     namespace Type {
         // ========== Value =========
         Value Value::str_to_value(Enum::ColType col_type, const std::string &str) {

@@ -4,7 +4,7 @@
 #include "util.h"
 #include "io.h"
 
-using namespace DB;
+using namespace SDB;
 
 // ========== static ==========
 Cache::CountLst Cache::count_lst;

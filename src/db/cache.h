@@ -14,7 +14,7 @@
 class Cache {
 public:
     // type
-    using Bytes = DB::Type::Bytes;
+    using Bytes = SDB::Type::Bytes;
     using BytesPtr = std::shared_ptr<Bytes>;
     using CacheKey = std::string;
     using KeyLst = std::list<CacheKey>;

@@ -17,10 +17,10 @@ struct BptNode {
 //    using lstSecType = boost::variant<std::shared_ptr<Bytes>, std::shared_ptr<BptNode>>;
 //    using lstItemType = std::pair<Value, lstSecType>;
 //    using lstType = std::list<lstItemType>;
-    using Value = DB::Type::Value;
-    using Bytes = DB::Type::Bytes;
-    using Pos = DB::Type::Pos;
-    using lstPosItemType = std::pair<DB::Type::Value, DB::Type::Pos>;
+    using Value = SDB::Type::Value;
+    using Bytes = SDB::Type::Bytes;
+    using Pos = SDB::Type::Pos;
+    using lstPosItemType = std::pair<SDB::Type::Value, SDB::Type::Pos>;
     using PoslstType = std::list<lstPosItemType>;
     using nodePtrType = std::shared_ptr<BptNode>;
 
@@ -48,18 +48,18 @@ struct BptNode {
 class BpTree{
 public:
     // === type ===
-    using Value = DB::Type::Value;
-    using Bytes = DB::Type::Bytes;
-    using Pos = DB::Type::Pos;
-    using PosList = DB::Type::PosList;
+    using Value = SDB::Type::Value;
+    using Bytes = SDB::Type::Bytes;
+    using Pos = SDB::Type::Pos;
+    using PosList = SDB::Type::PosList;
     using nodePtrType = std::shared_ptr<BptNode>;
     using nodePosLstType = typename BptNode::PoslstType;
-    using TableProperty = DB::Type::TableProperty;
+    using TableProperty = SDB::Type::TableProperty;
 //    using nodeLstItemType = typename BptNode<Value, Bytes>::lstItemType;
 //    using nodeLstType = typename BptNode<Value, Bytes>::lstType;
 
     BpTree()= delete;
-    BpTree(const DB::Type::TableProperty &table_property);
+    BpTree(const SDB::Type::TableProperty &table_property);
     // 禁止树的复制，防止文件读写不一致
     BpTree(const BpTree &bpt)= delete;
     BpTree(BpTree &&bpt)= delete;
@@ -69,7 +69,7 @@ public:
     void clear();
     void write_info_block();
 
-    nodePtrType read(DB::Type::Pos pos) const;
+    nodePtrType read(SDB::Type::Pos pos) const;
     void write(nodePtrType ptr);
 
     // sql
@@ -89,10 +89,10 @@ public:
 private:
 //    nodePtrType root;
     Pos root_pos;
-    DB::Type::PosList free_pos_list;
+    SDB::Type::PosList free_pos_list;
     Pos free_end_pos;
     size_t node_key_count;
-    DB::Type::TableProperty table_property;
+    SDB::Type::TableProperty table_property;
 
     void initialize();
 

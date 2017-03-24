@@ -15,7 +15,7 @@
 #include <unordered_map>
 #include <cppformat/format.h>
 
-namespace DB {
+namespace SDB {
     namespace Enum {
         enum ColType: char {
             // int
@@ -55,12 +55,12 @@ namespace DB {
 
         struct Value {
             // data
-            DB::Enum::ColType type;
+            SDB::Enum::ColType type;
             Bytes data;
 
             // function
             Value()= delete;
-            Value(DB::Enum::ColType type, Bytes data)
+            Value(SDB::Enum::ColType type, Bytes data)
                     :type(type), data(data){}
 
             // value_op
@@ -268,13 +268,21 @@ namespace DB {
 
     namespace Function {
         template <typename T>
-        DB::Type::Bytes en_bytes(const T &t){
-            DB::Type::Bytes bytes = std::vector<char>(sizeof(t));
+        Type::Bytes en_bytes(const T &t){
+            SDB::Type::Bytes bytes = std::vector<char>(sizeof(t));
             std::memcpy(bytes.data(), &t, sizeof(t));
             return bytes;
         }
+        template <>
+        Type::Bytes en_bytes(std::string str){
+            Type::Bytes bytes(Const::SIZE_SIZE);
+            size_t len = str.size();
+            std::memcpy(bytes.data(), &len, Const::SIZE_SIZE);
+            bytes.insert(bytes.end(), str.begin(), str.end());
+            return bytes;
+        }
 
-        inline void bytes_print(const DB::Type::Bytes &bytes) {
+        inline void bytes_print(const SDB::Type::Bytes &bytes) {
             for (auto &&item : bytes) {
                 std::cout << item;
             }

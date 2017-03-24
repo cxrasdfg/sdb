@@ -217,6 +217,8 @@ namespace SDB {
                 std::string col_name;
                 Enum::ColType col_type;
                 size_t type_size;
+
+                // foreign key
             };
             // data member
             std::vector<ColProperty> property_lst;
@@ -268,13 +270,13 @@ namespace SDB {
 
     namespace Function {
         template <typename T>
-        Type::Bytes en_bytes(const T &t){
+        Type::Bytes en_bytes(T t){
             SDB::Type::Bytes bytes = std::vector<char>(sizeof(t));
             std::memcpy(bytes.data(), &t, sizeof(t));
             return bytes;
         }
-        template <>
-        Type::Bytes en_bytes(std::string str){
+        template <> 
+        inline Type::Bytes en_bytes<std::string>(std::string str){
             Type::Bytes bytes(Const::SIZE_SIZE);
             size_t len = str.size();
             std::memcpy(bytes.data(), &len, Const::SIZE_SIZE);

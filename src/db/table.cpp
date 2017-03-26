@@ -21,7 +21,8 @@ using SDB::Type::Bytes;
 using SDB::Type::Value;
 using SDB::Type::TupleProperty;
 using SDB::Enum::ColType;
-using namespace SDB::Const;
+
+using namespace SDB;
 
 // SQL
 void Table::insert(const Tuple &tuple) {
@@ -173,27 +174,32 @@ void Table::read_meta_data(const std::string &db_name, const std::string &table_
 }
 
 void Table::write_meta_data(const SDB::Type::TableProperty &property) {
-    // write table_name key map
-
+    // write table property
     Bytes bytes;
     // key
-    Bytes key_size_bytes = SDB::Function::en_bytes(property.key.size());
-    bytes.insert(bytes.end(), key_size_bytes.begin(), key_size_bytes.end());
-    bytes.insert(bytes.end(), property.key.begin(), property.key.end());
-    //map
-    Bytes tuple_count_bytes = SDB::Function::en_bytes(property.tuple_property.property_lst.size());
-    bytes.insert(bytes.end(), tuple_count_bytes.begin(), tuple_count_bytes.end());
+    Function::bytes_append(bytes, property.key);
+    // tuple property list
+    // bytes : [[col_name][col_type][type_size]]*
+    Function::bytes_append(bytes, property.tuple_property.property_lst.size());
     for (auto &&item : property.tuple_property.property_lst) {
         // col name
-        Bytes col_size_bytes = SDB::Function::en_bytes(item.col_name.size());
-        bytes.insert(bytes.end(), col_size_bytes.begin(), col_size_bytes.end());
-        bytes.insert(bytes.end(), item.col_name.begin(), item.col_name.end());
+        Function::bytes_append(bytes, item.col_name);
         // type
-        bytes.push_back(item.col_type);
+        Function::bytes_append(bytes, item.col_type);
         // type size
-        Bytes type_size_bytes = SDB::Function::en_bytes(item.type_size);
-        bytes.insert(bytes.end(), type_size_bytes.begin(), type_size_bytes.end());
+        Function::bytes_append(bytes, item.type_size);
     }
+    // referencing_map
+    // bytes : <unordered_map> [[col_name][table_name]]*
+    Function::bytes_append(bytes, property.referencing_map);
+    // referenced_map
+    // bytes : <unordered_map> |[table_name][col_name]|*
+    Function::bytes_append(bytes, property.referenced_map);
+    // not_null_set
+    // bytes : <unordered_set> [col_name]*
+    Function::bytes_append(bytes, property.not_null_set);
+
+    // write to meta file
     IO io(get_table_meta_path(property));
     io.write_file(bytes);
 }

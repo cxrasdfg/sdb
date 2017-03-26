@@ -29,7 +29,6 @@ void DB::insert(const std::string &table_name, const Tuple &tuple) {
     table.insert(tuple);
 }
 
-
 void DB::remove(const std::string &table_name,
                 const std::string &col_name,
                 const Value &value) {
@@ -69,11 +68,9 @@ DB::TupleLst DB::find(const std::string &table_name,
 void DB::write_meta_data(const std::string &db_name, const TableNameSet &set) {
     Type::Bytes bytes;
     Type::Bytes db_name_bytes = Function::en_bytes(db_name);
+    Type::Bytes set_bytes = Function::en_bytes(set);
     bytes.insert(bytes.end(), db_name_bytes.begin(), db_name_bytes.end());
-    for (auto &&str : set) {
-        Type::Bytes table_name_bytes = Function::en_bytes(str);
-        bytes.insert(bytes.end(), table_name_bytes.begin(), table_name_bytes.end());
-    }
+    bytes.insert(bytes.end(), set_bytes.begin(), set_bytes.end());
     IO io(get_meta_path(db_name));
     io.write_file(bytes);
 }

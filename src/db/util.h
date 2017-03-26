@@ -308,6 +308,8 @@ namespace SDB {
         inline typename std::enable_if<SetTraits<T>::is_set, Type::Bytes>::type
         en_bytes(T set){
             Type::Bytes bytes;
+            Type::Bytes size_bytes = en_bytes(set.size());
+            bytes.insert(bytes.end(), size_bytes.begin(), size_bytes.end());
             for (auto &&x : set) {
                 Type::Bytes x_bytes = en_bytes(x);
                 bytes.insert(bytes.end(), x_bytes.begin(), x_bytes.end());
@@ -338,6 +340,12 @@ namespace SDB {
                 std::cout << item;
             }
             std::cout << std::endl;
+        }
+
+        template <typename T>
+        inline void bytes_append(Type::Bytes &bytes, T &&tail) {
+            Type::Bytes tail_bytes = en_bytes(tail);
+            bytes.insert(bytes.end(), tail_bytes.begin(), tail_bytes.end());
         }
 
         size_t get_type_len(Enum::ColType col_type);

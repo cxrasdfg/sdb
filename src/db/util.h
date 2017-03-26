@@ -12,8 +12,10 @@
 #include <string>
 #include <iostream>
 #include <map>
+#include <list>
 #include <unordered_map>
 #include <cppformat/format.h>
+#include <unordered_set>
 
 namespace SDB {
     namespace Enum {
@@ -209,6 +211,7 @@ namespace SDB {
         using BVFunc = std::function<bool(Value)>;
         using VVFunc = std::function<Value(Value)>;
 
+        // ========== Property ==========
         struct TupleProperty{
             // type
             struct ColProperty {
@@ -217,8 +220,6 @@ namespace SDB {
                 std::string col_name;
                 Enum::ColType col_type;
                 size_t type_size;
-
-                // foreign key
             };
             // data member
             std::vector<ColProperty> property_lst;
@@ -236,6 +237,10 @@ namespace SDB {
             std::string table_name;
             std::string key;
             TupleProperty tuple_property;
+            // integrity
+            std::unordered_map<std::string, std::string> referencing_map;
+            std::unordered_map<std::string, std::string> referenced_map;
+            std::unordered_set<std::string> not_null_set;
 
             TableProperty(){}
             TableProperty(const std::string &db_name,
@@ -269,14 +274,58 @@ namespace SDB {
     }
 
     namespace Function {
+        // === Set Traits ===
+        // basic
         template <typename T>
-        Type::Bytes en_bytes(T t){
+        struct SetTraits {
+            static const bool is_set = false;
+        };
+        // vector
+        template <typename SubType>
+        struct SetTraits<std::vector<SubType>> {
+            static const bool is_set = true;
+        };
+        // unordered_set
+        template <typename SubType>
+        struct SetTraits<std::unordered_set<SubType>> {
+            static const bool is_set = true;
+        };
+        template <typename SubType>
+        struct SetTraits<std::list<SubType>> {
+            static const bool is_set = true;
+        };
+
+        // en_bytes if basic type
+        template <typename T>
+        inline typename std::enable_if<!SetTraits<T>::is_set, Type::Bytes>::type
+        en_bytes(T t){
             SDB::Type::Bytes bytes = std::vector<char>(sizeof(t));
             std::memcpy(bytes.data(), &t, sizeof(t));
             return bytes;
         }
-        template <> 
-        inline Type::Bytes en_bytes<std::string>(std::string str){
+        // en_bytes if 'set' type
+        template <typename T>
+        inline typename std::enable_if<SetTraits<T>::is_set, Type::Bytes>::type
+        en_bytes(T set){
+            Type::Bytes bytes;
+            for (auto &&x : set) {
+                Type::Bytes x_bytes = en_bytes(x);
+                bytes.insert(bytes.end(), x_bytes.begin(), x_bytes.end());
+            }
+            return bytes;
+        }
+        // en_bytes if pair type
+        template <typename Fst, typename Sec>
+        inline Type::Bytes en_bytes(std::pair<Fst, Sec> pair){
+            Type::Bytes bytes;
+            Type::Bytes fst_bytes = en_bytes(pair.first);
+            Type::Bytes sec_bytes = en_bytes(pair.second);
+            bytes.insert(bytes.end(), fst_bytes.begin(), fst_bytes.end());
+            bytes.insert(bytes.end(), sec_bytes.begin(), sec_bytes.end());
+            return bytes;
+        }
+        // en_bytes if string type
+        inline Type::Bytes en_bytes(std::string str){
             Type::Bytes bytes(Const::SIZE_SIZE);
             size_t len = str.size();
             std::memcpy(bytes.data(), &len, Const::SIZE_SIZE);

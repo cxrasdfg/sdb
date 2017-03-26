@@ -3,7 +3,6 @@
 
 #include <string>
 #include <map>
-#include <cppformat/format.h>
 
 #include "record.h"
 #include "util.h"

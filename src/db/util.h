@@ -12,10 +12,9 @@
 #include <string>
 #include <iostream>
 #include <map>
-#include <list>
 #include <unordered_map>
-#include <cppformat/format.h>
 #include <unordered_set>
+#include <boost/spirit/home/support/container.hpp>
 
 namespace SDB {
     namespace Enum {
@@ -72,7 +71,7 @@ namespace SDB {
                 using namespace Const;
                 if (value1.type != value2.type) {
                     throw std::runtime_error(
-                            fmt::format("Error: type {0} {1} can't call op function")
+                            std::string("Error: type {0} {1} can't call op function")
                     );
                 }
                 switch (value1.type) {
@@ -100,7 +99,7 @@ namespace SDB {
                 using namespace Const;
                 if (value1.type != value2.type) {
                     throw std::runtime_error(
-                            fmt::format("Error: type {0} {1} can't call op function")
+                            std::string("Error: <value_op> type {0} {1} can't call op function")
                     );
                 }
                 switch (value1.type) {
@@ -274,43 +273,52 @@ namespace SDB {
     }
 
     namespace Function {
-        // === Set Traits ===
-        // basic
-        template <typename T>
-        struct SetTraits {
-            static const bool is_set = false;
-        };
-        // vector
-        template <typename SubType>
-        struct SetTraits<std::vector<SubType>> {
-            static const bool is_set = true;
-        };
-        // unordered_set
-        template <typename SubType>
-        struct SetTraits<std::unordered_set<SubType>> {
-            static const bool is_set = true;
-        };
-        template <typename SubType>
-        struct SetTraits<std::list<SubType>> {
-            static const bool is_set = true;
-        };
+//        // === Container Traits ===
+//        // basic
+//        template <typename T>
+//        struct CtnTraits {
+//            static const bool is_set = false;
+//        };
+//        // vector
+//        template <typename SubType>
+//        struct CtnTraits<std::vector<SubType>> {
+//            static const bool is_set = true;
+//        };
+//        // list
+//        template <typename SubType>
+//        struct CtnTraits<std::list<SubType>> {
+//            static const bool is_set = true;
+//        };
+//        // set
+//        template <typename SubType>
+//        struct CtnTraits<std::set<SubType>> {
+//            static const bool is_set = true;
+//        };
+//        // unordered_set
+//        template <typename SubType>
+//        struct CtnTraits<std::unordered_set<SubType>> {
+//            static const bool is_set = true;
+//        };
 
         // en_bytes if basic type
+        using boost::spirit::traits::is_container;
         template <typename T>
-        inline typename std::enable_if<!SetTraits<T>::is_set, Type::Bytes>::type
+        inline typename std::enable_if<!is_container<T>::value, Type::Bytes>::type
         en_bytes(T t){
             SDB::Type::Bytes bytes = std::vector<char>(sizeof(t));
             std::memcpy(bytes.data(), &t, sizeof(t));
             return bytes;
         }
         // en_bytes if 'set' type
-        template <typename T>
-        inline typename std::enable_if<SetTraits<T>::is_set, Type::Bytes>::type
-        en_bytes(T set){
+        template <typename Ctn>
+        inline typename std::enable_if<
+                is_container<Ctn>::value && !std::is_same<Ctn, Type::Bytes>::value,
+                Type::Bytes>::type
+        en_bytes(Ctn cnt){
             Type::Bytes bytes;
-            Type::Bytes size_bytes = en_bytes(set.size());
+            Type::Bytes size_bytes = en_bytes(cnt.size());
             bytes.insert(bytes.end(), size_bytes.begin(), size_bytes.end());
-            for (auto &&x : set) {
+            for (auto &&x : cnt) {
                 Type::Bytes x_bytes = en_bytes(x);
                 bytes.insert(bytes.end(), x_bytes.begin(), x_bytes.end());
             }
@@ -326,14 +334,7 @@ namespace SDB {
             bytes.insert(bytes.end(), sec_bytes.begin(), sec_bytes.end());
             return bytes;
         }
-        // en_bytes if string type
-        inline Type::Bytes en_bytes(std::string str){
-            Type::Bytes bytes(Const::SIZE_SIZE);
-            size_t len = str.size();
-            std::memcpy(bytes.data(), &len, Const::SIZE_SIZE);
-            bytes.insert(bytes.end(), str.begin(), str.end());
-            return bytes;
-        }
+        // en_bytes if Value type
 
         inline void bytes_print(const SDB::Type::Bytes &bytes) {
             for (auto &&item : bytes) {

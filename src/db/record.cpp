@@ -13,6 +13,8 @@ using SDB::Const::BLOCK_SIZE;
 using SDB::Const::SIZE_SIZE;
 using SDB::Const::POS_SIZE;
 
+using namespace SDB;
+
 Record::TupleLst Record::read_record(const SDB::Type::PosList &pos_lst) {
     std::map<size_t, std::vector<size_t>> block_offsets_map;
     for (auto &&item : pos_lst) {
@@ -204,10 +206,7 @@ Record::Value Record::bytes_to_value(SDB::Enum::ColType type,
 Bytes Record::value_to_bytes(const Value &value) {
     Bytes bytes;
     if (value.is_var_type()) {
-        size_t len = value.data.size();
-        Bytes len_bytes(SDB::Const::SIZE_SIZE);
-        std::memcpy(len_bytes.data(), &len, SDB::Const::SIZE_SIZE);
-        bytes.insert(bytes.end(), len_bytes.begin(), len_bytes.end());
+        Function::bytes_append(bytes, value.data.size());
     }
     bytes.insert(bytes.end(), value.data.begin(), value.data.end());
     return bytes;

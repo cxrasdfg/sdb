@@ -6,7 +6,6 @@
 #include <cstring>
 #include <ctime>
 #include <functional>
-#include <cppformat/format.h>
 #include <memory>
 
 #include "table.h"

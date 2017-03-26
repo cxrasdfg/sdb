@@ -9,7 +9,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <boost/filesystem.hpp>
-#include <cppformat/format.h>
+#include <boost/format.hpp>
 
 #include "io.h"
 #include "util.h"
@@ -24,7 +24,7 @@ void IO::create_file(const std::string &file_name) {
     std::string file_path = get_db_file_path(file_name);
     std::ifstream in(file_path);
     if (in.is_open()) {
-        throw std::runtime_error(fmt::format("Error:filename[{}] already existed\n", file_name));
+        throw std::runtime_error(std::string("Error:filename[%s%] already existed\n"));
     }
     std::ofstream out(file_path, ios::binary);
     out.close();

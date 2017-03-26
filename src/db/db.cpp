@@ -67,12 +67,15 @@ DB::TupleLst DB::find(const std::string &table_name,
 // ========== Private =======
 void DB::write_meta_data(const std::string &db_name, const TableNameSet &set) {
     Type::Bytes bytes;
-    Type::Bytes db_name_bytes = Function::en_bytes(db_name);
-    Type::Bytes set_bytes = Function::en_bytes(set);
-    bytes.insert(bytes.end(), db_name_bytes.begin(), db_name_bytes.end());
-    bytes.insert(bytes.end(), set_bytes.begin(), set_bytes.end());
+    Function::bytes_append(bytes, db_name);
+    Function::bytes_append(bytes, set);
     IO io(get_meta_path(db_name));
     io.write_file(bytes);
+}
+
+void DB::read_meta_data() {
+    IO io(get_meta_path(db_name));
+    Type::Bytes bytes = io.read_file();
 }
 
 std::string DB::get_meta_path(const std::string &db_name) {

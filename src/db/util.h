@@ -12,6 +12,7 @@
 #include <string>
 #include <iostream>
 #include <map>
+#include <list>
 #include <unordered_map>
 #include <unordered_set>
 #include <boost/spirit/home/support/container.hpp>
@@ -273,32 +274,52 @@ namespace SDB {
     }
 
     namespace Function {
-//        // === Container Traits ===
-//        // basic
-//        template <typename T>
-//        struct CtnTraits {
-//            static const bool is_set = false;
-//        };
-//        // vector
-//        template <typename SubType>
-//        struct CtnTraits<std::vector<SubType>> {
-//            static const bool is_set = true;
-//        };
-//        // list
-//        template <typename SubType>
-//        struct CtnTraits<std::list<SubType>> {
-//            static const bool is_set = true;
-//        };
-//        // set
-//        template <typename SubType>
-//        struct CtnTraits<std::set<SubType>> {
-//            static const bool is_set = true;
-//        };
-//        // unordered_set
-//        template <typename SubType>
-//        struct CtnTraits<std::unordered_set<SubType>> {
-//            static const bool is_set = true;
-//        };
+        // === Container Traits ===
+        // vector
+        template <typename T>
+        struct VectorTraits {
+            static const bool value = false;
+        };
+        template <typename SubType>
+        struct VectorTraits<std::vector<SubType>> {
+            static const bool value = true;
+        };
+        // list
+        template <typename SubType>
+        struct ListTraits {
+            static const bool value = false;
+        };
+        template <typename SubType>
+        struct ListTraits<std::list<SubType>> {
+            static const bool value = true;
+        };
+        // string
+        template <typename SubType>
+        struct StringTraits {
+            static const bool value = false;
+        };
+        template <>
+        struct StringTraits<std::string> {
+            static const bool value = true;
+        };
+        // set
+        template <typename SubType>
+        struct USetTraits {
+            static const bool value = false;
+        };
+        template <typename SubType>
+        struct USetTraits<std::unordered_set<SubType>> {
+            static const bool value = true;
+        };
+        // unordered_map
+        template <typename T>
+        struct UMapTraits {
+            static const bool value = false;
+        };
+        template <typename Fst, typename Sec>
+        struct UMapTraits<std::unordered_map<Fst, Sec>> {
+            static const bool value = true;
+        };
 
         // en_bytes if basic type
         using boost::spirit::traits::is_container;
@@ -334,7 +355,38 @@ namespace SDB {
             bytes.insert(bytes.end(), sec_bytes.begin(), sec_bytes.end());
             return bytes;
         }
-        // en_bytes if Value type
+
+        template <typename T>
+        inline typename std::enable_if<UMapTraits<T>::value || USetTraits<T>::value, void>::type
+        container_append(T &t, const typename T::value_type &tail) {
+            t.insert(tail);
+        }
+        template <typename T>
+        inline typename std::enable_if<VectorTraits<T>::value 
+                                        || ListTraits<T>::value 
+                                        || StringTraits<T>::value, void>::type
+        container_append(T &t, const typename T::value_type &tail) {
+            t.push_back(tail);
+        }
+        template <typename T>
+        inline typename std::enable_if<!is_container<T>::value, void>::type
+        de_bytes(T &t, const Type::Bytes &bytes, size_t &offset){
+            std::memcpy(&t, bytes.data()+offset, sizeof(t));
+            offset += sizeof(t);
+        }
+
+        template <typename T>
+        inline typename std::enable_if<is_container<T>::value, void>::type
+        de_bytes(T &t, const Type::Bytes &bytes, size_t &offset) {
+            size_t len;
+            std::memcpy(&len, bytes.data()+offset, Const::SIZE_SIZE);
+            offset += Const::SIZE_SIZE;
+            for (size_t i = 0; i < len; i++) {
+                typename T::value_type value;
+                de_bytes(value, bytes, offset);
+                container_append(t, value);
+            }
+        }
 
         inline void bytes_print(const SDB::Type::Bytes &bytes) {
             for (auto &&item : bytes) {

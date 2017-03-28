@@ -76,6 +76,9 @@ void DB::write_meta_data(const std::string &db_name, const TableNameSet &set) {
 void DB::read_meta_data() {
     IO io(get_meta_path(db_name));
     Type::Bytes bytes = io.read_file();
+    size_t offset = 0;
+    Function::de_bytes(db_name, bytes, offset);
+    Function::de_bytes(table_name_set, bytes, offset);
 }
 
 std::string DB::get_meta_path(const std::string &db_name) {

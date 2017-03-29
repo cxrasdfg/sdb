@@ -24,7 +24,7 @@ public:
     }
     // sql
     static void create_table(const SDB::Type::TableProperty &property);
-    static void drop_table(const TableProperty &property);
+    void drop_table();
     void insert(const Tuple &tuple);
     void remove(const std::string &col_name, const Value &value);
     void remove(const std::string &col_name, SDB::Type::BVFunc predicate);
@@ -33,13 +33,21 @@ public:
     TupleLst find(const std::string &col_name, const SDB::Type::Value &value);
     TupleLst find(const std::string &col_name, std::function<bool(Value)> predicate);
 
+    bool is_referenced()const;
+    bool is_referencing()const;
+    bool is_referencing(const std::string &table_name)const;
+
+    std::unordered_map<std::string, std::string> get_referenced_map()const;
+    std::unordered_map<std::string, std::string> get_referencing_map()const;
+    std::string get_key()const;
+
 private:
     //function
     static std::string get_table_meta_path(const TableProperty &property);
 
     void read_meta_data(const std::string &db_name, const std::string &table_name);
     static void write_meta_data(const SDB::Type::TableProperty &property);
-    bool is_has_index(const std::string &col_name);
+    bool is_has_index(const std::string &col_name)const;
 
 private:
     SDB::Type::TableProperty property;

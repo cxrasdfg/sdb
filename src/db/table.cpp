@@ -120,7 +120,7 @@ void Table::create_table(const SDB::Type::TableProperty &property) {
     BpTree::create(property);
 }
 
-void Table::drop_table(const TableProperty &property) {
+void Table::drop_table() {
     IO::delete_file(get_table_meta_path(property));
     // index
     BpTree::drop(property);
@@ -133,44 +133,36 @@ void Table::drop_table(const TableProperty &property) {
 
 // ========= private ========
 void Table::read_meta_data(const std::string &db_name, const std::string &table_name) {
-    // --- read table name key map ---
-
     property.db_name = db_name;
     property.table_name = table_name;
     IO io(get_table_meta_path(property));
     Bytes bytes = io.read_file();
-    auto beg = bytes.data();
     size_t offset = 0;
-    // table name size
-    size_t size_len = sizeof(size_t);
-    // key name size
-    size_t key_name_size;
-    std::memcpy(&key_name_size, beg+offset, size_len);
-    offset += size_len;
-    property.key = std::string(beg+offset, key_name_size);
-    offset += key_name_size;
-
+    Function::de_bytes(property.key, bytes, offset);
     size_t col_count;
-    std::memcpy(&col_count, beg+offset, size_len);
-    offset += size_len;
+    Function::de_bytes(col_count, bytes, offset);
     for (size_t i = 0; i < col_count; ++i) {
         // cal name
-        size_t col_name_size;
-        std::memcpy(&col_name_size, beg+offset, size_len);
-        offset += size_len;
-        std::string col_name(beg+offset, col_name_size);
-        offset += col_name_size;
-
+        std::string col_name;
+        Function::de_bytes(col_name, bytes, offset);
         // type
         ColType type;
-        std::memcpy(&type, beg+offset, sizeof(char));
-        offset += sizeof(char);
+        Function::de_bytes(type, bytes, offset);
         // type_size
         size_t type_size;
-        std::memcpy(&type_size, beg+offset, sizeof(size_t));
-        offset += sizeof(size_t);
+        Function::de_bytes(type_size, bytes, offset);
         property.tuple_property.push_back(col_name, type, type_size);
     }
+    // referencing_map
+    // bytes : <unordered_map> [[col_name][table_name]]*
+    Function::de_bytes(property.referencing_map, bytes, offset);
+    // referenced_map
+    // bytes : <unordered_map> |[table_name][col_name]|*
+    Function::de_bytes(property.referenced_map, bytes, offset);
+    // referenced_map
+    // not_null_set
+    // bytes : <unordered_set> [col_name]*
+    Function::de_bytes(property.not_null_set, bytes, offset);
 }
 
 void Table::write_meta_data(const SDB::Type::TableProperty &property) {
@@ -204,8 +196,31 @@ void Table::write_meta_data(const SDB::Type::TableProperty &property) {
     io.write_file(bytes);
 }
 
-bool Table::is_has_index(const std::string &col_name) {
+bool Table::is_has_index(const std::string &col_name) const {
     return col_name == property.key;
+}
+
+bool Table::is_referenced() const {
+    return property.referenced_map.empty();
+}
+
+bool Table::is_referencing()const{
+    return property.referencing_map.empty();
+}
+
+bool Table::is_referencing(const std::string &table_name)const{
+    return (property.referencing_map.find(table_name) != property.referencing_map.end());
+}
+
+std::unordered_map<std::string, std::string> Table::get_referenced_map()const {
+    return property.referenced_map;
+}
+std::unordered_map<std::string, std::string> Table::get_referencing_map()const {
+    return property.referencing_map;
+}
+
+std::string Table::get_key()const {
+    return property.key;
 }
 
 // ========== private function ========

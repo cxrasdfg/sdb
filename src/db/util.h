@@ -238,7 +238,9 @@ namespace SDB {
             std::string key;
             TupleProperty tuple_property;
             // integrity
+            // <table_name, col_name>
             std::unordered_map<std::string, std::string> referencing_map;
+            // <table_name, col_name>
             std::unordered_map<std::string, std::string> referenced_map;
             std::unordered_set<std::string> not_null_set;
 

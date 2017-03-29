@@ -20,12 +20,26 @@ void DB::create_table(const SDB::Type::TableProperty &table_property) {
     Table::create_table(table_property);
 }
 
-void DB::drop_table(const SDB::Type::TableProperty &table_property) {
-    Table::drop_table(table_property);
+void DB::drop_table(const std::string &table_name) {
+    Table table(db_name, table_name);
+    if (table.is_referenced()) {
+        throw std::runtime_error("Error:[drop table] table already is referenced");
+    }
+    table.drop_table();
 }
 
 void DB::insert(const std::string &table_name, const Tuple &tuple) {
     Table table(db_name, table_name);
+    auto referencing_map = table.get_referencing_map();
+    for (auto &&item : referencing_map) {
+        Table ref_table(db_name, item.first);
+        for (auto && value: tuple.value_lst) {
+            Type::TupleLst tuple_lst = ref_table.find(ref_table.get_key(), value);
+            if (!tuple_lst.tuple_lst.empty()) {
+                throw std::runtime_error(std::string("Error [db.insert]: can't fonud referencing key:")+value.get_string());
+            }
+        }
+    }
     table.insert(tuple);
 }
 

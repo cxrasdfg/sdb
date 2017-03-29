@@ -35,16 +35,19 @@ void table_init_test();
 void table_test();
 void record_test();
 void cache_test();
+void utils_test();
 
 int main(void) {
     clock_t start = clock();
 //    io_test();
-    Table::drop_table(get_table_property());
+    Table table("test", "test");
+    table.drop_table();
     table_init_test();
 //    bpt_test();
     table_test();
 //    record_test();
     //cache_test();
+    //utils_test();
     std::cout << "time:" << (double)((clock()-start))/CLOCKS_PER_SEC << std::endl;
     return 0;
 }
@@ -218,5 +221,16 @@ void cache_test() {
         if (!data.empty()) {
             Function::bytes_print(data);
         }
+    }
+}
+
+void utils_test() {
+    std::vector<std::string> v{"str", "123", "146"};
+    Bytes bytes = Function::en_bytes(v);
+    v.clear();
+    size_t offset = 0;
+    Function::de_bytes(v, bytes, offset);
+    for (auto &&x : v) {
+        std::cout << x << std::endl;
     }
 }

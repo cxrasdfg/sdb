@@ -24,7 +24,9 @@ void IO::create_file(const std::string &file_name) {
     std::string file_path = get_db_file_path(file_name);
     std::ifstream in(file_path);
     if (in.is_open()) {
-        throw std::runtime_error(std::string("Error:filename[%s%] already existed\n"));
+        throw std::runtime_error(
+            std::string("Error:filename[")+file_name+"] already existed\n"
+       );
     }
     std::ofstream out(file_path, ios::binary);
     out.close();

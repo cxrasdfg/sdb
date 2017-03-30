@@ -40,6 +40,7 @@ public:
     std::unordered_map<std::string, std::string> get_referenced_map()const;
     std::unordered_map<std::string, std::string> get_referencing_map()const;
     std::string get_key()const;
+    SDB::Type::TupleProperty get_tuple_property()const;
 
 private:
     //function

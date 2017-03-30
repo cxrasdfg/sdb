@@ -109,7 +109,6 @@ Record::TupleLst Table::find(const std::string &col_name, std::function<bool(Val
 void Table::create_table(const SDB::Type::TableProperty &property) {
     // table meta
     // create dir
-    IO::create_dir(property.db_name);
     IO::create_dir(property.db_name+"/"+property.table_name);
     write_meta_data(property);
 
@@ -128,7 +127,6 @@ void Table::drop_table() {
     Record::drop(property);
     // drop dir
     IO::remove_dir(property.db_name+"/"+property.table_name);
-    IO::remove_dir(property.db_name);
 }
 
 // ========= private ========
@@ -201,7 +199,7 @@ bool Table::is_has_index(const std::string &col_name) const {
 }
 
 bool Table::is_referenced() const {
-    return property.referenced_map.empty();
+    return !property.referenced_map.empty();
 }
 
 bool Table::is_referencing()const{
@@ -221,6 +219,10 @@ std::unordered_map<std::string, std::string> Table::get_referencing_map()const {
 
 std::string Table::get_key()const {
     return property.key;
+}
+
+SDB::Type::TupleProperty Table::get_tuple_property()const{
+    return property.tuple_property;
 }
 
 // ========== private function ========

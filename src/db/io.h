@@ -13,8 +13,7 @@ public:
     // type
     using Bytes = SDB::Type::Bytes;
 
-    IO(const std::string &file)
-        :file_path(get_db_file_path(file)){}
+    IO(const std::string &file):file_path(get_db_file_path(file)){}
 
     // file
     static void create_file(const std::string &file_name);

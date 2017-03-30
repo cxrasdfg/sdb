@@ -13,6 +13,7 @@
 #include "bpTree.h"
 #include "cache.h"
 #include "io.h"
+#include "db.h"
 
 using std::cout;
 using std::endl;
@@ -36,15 +37,17 @@ void table_test();
 void record_test();
 void cache_test();
 void utils_test();
+void db_test();
 
 int main(void) {
     clock_t start = clock();
+    db_test();
 //    io_test();
-    Table table("test", "test");
-    table.drop_table();
-    table_init_test();
+    //Table table("test", "test");
+    //table.drop_table();
+    //table_init_test();
 //    bpt_test();
-    table_test();
+    //table_test();
 //    record_test();
     //cache_test();
     //utils_test();
@@ -233,4 +236,13 @@ void utils_test() {
     for (auto &&x : v) {
         std::cout << x << std::endl;
     }
+}
+
+void db_test(){
+    std::string db_name = "test";
+    DB db(db_name);
+    db.drop_db();
+    DB::create_db(db_name);
+    db.create_table(get_table_property());
+    db.drop_table(db_name);
 }

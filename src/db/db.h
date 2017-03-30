@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_set>
 #include "util.h"
+#include "table.h"
 
 class DB {
 public:
@@ -14,8 +15,12 @@ public:
     using TupleLst = SDB::Type::TupleLst;
 
 public:
+    DB(const std::string &db_name):db_name(db_name){
+        read_meta_data();
+    }
 
     static void create_db(const std::string &db_name);
+    void drop_db();
 
     void create_table(const SDB::Type::TableProperty &table_property);
     void drop_table(const std::string &table_name);
@@ -37,6 +42,12 @@ private:
     void read_meta_data();
 
     static std::string get_meta_path(const std::string &db_name);
+
+    // check integrity
+    template <typename T>
+    void check_referenced(const Table &table, T t);
+    void check_referencing(const Table &table, const Tuple &tuple);
+
 
 private:
     std::string db_name;

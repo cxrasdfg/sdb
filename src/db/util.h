@@ -275,8 +275,15 @@ namespace SDB {
         };
     }
 
-    namespace Function {
-        // === Container Traits ===
+    namespace Traits {
+        template <typename T>
+        struct PairTraits {
+            static const bool value = false;
+        };
+        template <typename Fst, typename Sec>
+        struct PairTraits<std::pair<Fst, Sec>> {
+            static const bool value = true;
+        };
         // vector
         template <typename T>
         struct VectorTraits {
@@ -313,6 +320,15 @@ namespace SDB {
         struct USetTraits<std::unordered_set<SubType>> {
             static const bool value = true;
         };
+        // map
+        template <typename T>
+        struct MapTraits {
+            static const bool value = false;
+        };
+        template <typename Fst, typename Sec>
+        struct MapTraits<std::map<Fst, Sec>> {
+            static const bool value = true;
+        };
         // unordered_map
         template <typename T>
         struct UMapTraits {
@@ -323,15 +339,27 @@ namespace SDB {
             static const bool value = true;
         };
 
+        template<typename T>
+        constexpr bool is_set = USetTraits<T>::value;
+        template<typename T>
+        constexpr bool is_map = UMapTraits<T>::value || MapTraits<T>::value;
+    }
+
+    namespace Function {
         // en_bytes if basic type
         using boost::spirit::traits::is_container;
         template <typename T>
-        inline typename std::enable_if<!is_container<T>::value, Type::Bytes>::type
+        inline typename std::enable_if<
+                !is_container<T>::value && !Traits::PairTraits<T>::value,
+                Type::Bytes>::type
         en_bytes(T t){
             SDB::Type::Bytes bytes = std::vector<char>(sizeof(t));
             std::memcpy(bytes.data(), &t, sizeof(t));
             return bytes;
         }
+        //
+        template <typename Fst, typename Sec>
+        inline Type::Bytes en_bytes(std::pair<Fst, Sec> pair);
         // en_bytes if 'set' type
         template <typename Ctn>
         inline typename std::enable_if<
@@ -359,36 +387,65 @@ namespace SDB {
         }
 
         template <typename T>
-        inline typename std::enable_if<UMapTraits<T>::value || USetTraits<T>::value, void>::type
-        container_append(T &t, const typename T::value_type &tail) {
+        inline typename std::enable_if<Traits::UMapTraits<T>::value || Traits::USetTraits<T>::value, void>::type
+        container_append(T &t, typename T::value_type tail) {
             t.insert(tail);
         }
         template <typename T>
-        inline typename std::enable_if<VectorTraits<T>::value 
-                                        || ListTraits<T>::value 
-                                        || StringTraits<T>::value, void>::type
-        container_append(T &t, const typename T::value_type &tail) {
+        inline typename std::enable_if<Traits::VectorTraits<T>::value 
+                                       || Traits::ListTraits<T>::value
+                                       || Traits::StringTraits<T>::value, void>::type
+        container_append(T &t, typename T::value_type tail) {
             t.push_back(tail);
         }
+
         template <typename T>
-        inline typename std::enable_if<!is_container<T>::value, void>::type
+        inline typename std::enable_if<
+                !is_container<T>::value && !Traits::PairTraits<T>::value,
+                void>::type
         de_bytes(T &t, const Type::Bytes &bytes, size_t &offset){
             std::memcpy(&t, bytes.data()+offset, sizeof(t));
             offset += sizeof(t);
         }
 
+        template <typename Fst, typename Sec>
+        inline void db_bytes(std::pair<Fst, Sec> &value, const Type::Bytes &bytes, size_t &offset);
+
         template <typename T>
-        inline typename std::enable_if<is_container<T>::value, void>::type
+        inline typename std::enable_if<is_container<T>::value && !Traits::is_map<T>, void>::type
         de_bytes(T &t, const Type::Bytes &bytes, size_t &offset) {
             size_t len;
             std::memcpy(&len, bytes.data()+offset, Const::SIZE_SIZE);
             offset += Const::SIZE_SIZE;
             for (size_t i = 0; i < len; i++) {
                 typename T::value_type value;
+                static_assert(!std::is_const<decltype(value)>::value, "ads");
                 de_bytes(value, bytes, offset);
                 container_append(t, value);
             }
         }
+        template <typename T>
+        inline typename std::enable_if<Traits::is_map<T>, void>::type
+        de_bytes(T &t, const Type::Bytes &bytes, size_t &offset) {
+            size_t len;
+            std::memcpy(&len, bytes.data()+offset, Const::SIZE_SIZE);
+            offset += Const::SIZE_SIZE;
+            for (size_t i = 0; i < len; i++) {
+                std::remove_const_t<typename T::value_type> value;
+                std::remove_const_t<decltype(value.first)> fst_value;
+                std::remove_const_t<decltype(value.second)> sec_value;
+                de_bytes(fst_value, bytes, offset);
+                de_bytes(sec_value, bytes, offset);
+                t.insert(std::make_pair(fst_value, sec_value));
+            }
+        }
+
+        template <typename Fst, typename Sec>
+        inline void de_bytes(std::pair<Fst, Sec> &value, const Type::Bytes &bytes, size_t &offset) {
+            de_bytes(value.first, bytes, offset);
+            de_bytes(value.second, bytes, offset);
+        };
+
 
         inline void bytes_print(const SDB::Type::Bytes &bytes) {
             for (auto &&item : bytes) {

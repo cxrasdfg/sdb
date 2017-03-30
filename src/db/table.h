@@ -22,16 +22,26 @@ public:
     Table(const std::string &db_name, const std::string &table_name){
         read_meta_data(db_name, table_name);
     }
+    ~Table()noexcept {
+        if (!is_table_drop) {
+            write_meta_data(property);
+        }
+    }
     // sql
     static void create_table(const SDB::Type::TableProperty &property);
     void drop_table();
     void insert(const Tuple &tuple);
     void remove(const std::string &col_name, const Value &value);
     void remove(const std::string &col_name, SDB::Type::BVFunc predicate);
-    void update(const std::string &pred_col_name, SDB::Type::BVFunc predicate, const std::string &op_col_name,
-                    SDB::Type::VVFunc op);
+    void update(const std::string &pred_col_name, SDB::Type::BVFunc predicate,
+                const std::string &op_col_name, SDB::Type::VVFunc op);
     TupleLst find(const std::string &col_name, const SDB::Type::Value &value);
     TupleLst find(const std::string &col_name, std::function<bool(Value)> predicate);
+
+    void add_referencing(const std::string &table_name, const std::string &col_name);
+    void add_referenced(const std::string &table_name, const std::string &col_name);
+    void remove_referencing(const std::string &table_name);
+    void remove_referenced(const std::string &table_name);
 
     bool is_referenced()const;
     bool is_referencing()const;
@@ -49,6 +59,7 @@ private:
     void read_meta_data(const std::string &db_name, const std::string &table_name);
     static void write_meta_data(const SDB::Type::TableProperty &property);
     bool is_has_index(const std::string &col_name)const;
+    bool is_table_drop = false;
 
 private:
     SDB::Type::TableProperty property;

@@ -127,7 +127,52 @@ void Table::drop_table() {
     Record::drop(property);
     // drop dir
     IO::remove_dir(property.db_name+"/"+property.table_name);
+    is_table_drop = true;
 }
+
+void Table::add_referenced(const std::string &table_name, const std::string &col_name) {
+    property.referenced_map[table_name] = col_name;
+}
+
+void Table::add_referencing(const std::string &table_name, const std::string &col_name) {
+    property.referencing_map[table_name] = col_name;
+}
+
+void Table::remove_referenced(const std::string &table_name) {
+    property.referenced_map.erase(table_name);
+}
+
+void Table::remove_referencing(const std::string &table_name) {
+    property.referencing_map.erase(table_name);
+}
+
+bool Table::is_referenced() const {
+    return !property.referenced_map.empty();
+}
+
+bool Table::is_referencing()const{
+    return property.referencing_map.empty();
+}
+
+bool Table::is_referencing(const std::string &table_name)const{
+    return (property.referencing_map.find(table_name) != property.referencing_map.end());
+}
+
+std::unordered_map<std::string, std::string> Table::get_referenced_map()const {
+    return property.referenced_map;
+}
+std::unordered_map<std::string, std::string> Table::get_referencing_map()const {
+    return property.referencing_map;
+}
+
+std::string Table::get_key()const {
+    return property.key;
+}
+
+SDB::Type::TupleProperty Table::get_tuple_property()const{
+    return property.tuple_property;
+}
+
 
 // ========= private ========
 void Table::read_meta_data(const std::string &db_name, const std::string &table_name) {
@@ -196,33 +241,6 @@ void Table::write_meta_data(const SDB::Type::TableProperty &property) {
 
 bool Table::is_has_index(const std::string &col_name) const {
     return col_name == property.key;
-}
-
-bool Table::is_referenced() const {
-    return !property.referenced_map.empty();
-}
-
-bool Table::is_referencing()const{
-    return property.referencing_map.empty();
-}
-
-bool Table::is_referencing(const std::string &table_name)const{
-    return (property.referencing_map.find(table_name) != property.referencing_map.end());
-}
-
-std::unordered_map<std::string, std::string> Table::get_referenced_map()const {
-    return property.referenced_map;
-}
-std::unordered_map<std::string, std::string> Table::get_referencing_map()const {
-    return property.referencing_map;
-}
-
-std::string Table::get_key()const {
-    return property.key;
-}
-
-SDB::Type::TupleProperty Table::get_tuple_property()const{
-    return property.tuple_property;
 }
 
 // ========== private function ========

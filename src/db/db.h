@@ -18,6 +18,11 @@ public:
     DB(const std::string &db_name):db_name(db_name){
         read_meta_data();
     }
+    ~DB()noexcept {
+        if (!is_db_drop) {
+            write_meta_data(db_name, table_name_set);
+        }
+    }
 
     static void create_db(const std::string &db_name);
     void drop_db();
@@ -52,6 +57,7 @@ private:
 private:
     std::string db_name;
     TableNameSet table_name_set;
+    bool is_db_drop = false;
 };
 
 

@@ -35,7 +35,13 @@ void DB::drop_table(const std::string &table_name) {
     if (table.is_referenced()) {
         throw std::runtime_error("Error:[drop table] table already is referenced");
     }
+    for (auto &&item : table.get_referencing_map()) {
+        Table ref_table(db_name, item.first);
+        ref_table.remove_referenced(table_name);
+    }
+    table_name_set.erase(table_name);
     table.drop_table();
+    is_db_drop = true;
 }
 
 void DB::insert(const std::string &table_name, const Tuple &tuple) {

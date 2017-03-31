@@ -50,14 +50,20 @@ private:
     Cache(Cache &&)= delete;
     Cache &operator=(const Cache &)= delete;
     Cache &operator=(Cache &&)= delete;
+    ~Cache(){
+        sync();
+    }
 
+    // count read/write block frequency
     CountLst count_lst;
+    // block cache data
     std::unordered_map<CacheKey, CacheValue> data;
 
 private:
     CacheKey encode_key(const std::string &path, size_t block_num);
     KeyPair decode_key(const std::string &key);
     void write_back(const std::string &path, size_t block_num, const Bytes &bytes);
+    void sync();
 };
 
-#endif //MAIN_CACHE_H
+#endif //CACHE_H

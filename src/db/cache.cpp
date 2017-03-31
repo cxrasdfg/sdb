@@ -122,3 +122,10 @@ void Cache::write_back(const std::string &path, size_t block_num, const Bytes &b
     IO io(path);
     io.write_block(bytes, block_num);
 }
+
+void Cache::sync() {
+    for (auto &&item : data) {
+        auto pair = decode_key(item.first);
+        write_back(pair.first, pair.second, *item.second.ptr);
+    }
+}

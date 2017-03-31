@@ -6,10 +6,6 @@
 
 using namespace SDB;
 
-// ========== static ==========
-Cache::CountLst Cache::count_lst;
-std::unordered_map<Cache::CacheKey, Cache::CacheValue> Cache::data;
-
 // ========== public function ==========
 Cache::Bytes Cache::get(const std::string &path, size_t block_num) {
     CacheKey key = encode_key(path, block_num);

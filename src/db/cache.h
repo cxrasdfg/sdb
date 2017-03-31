@@ -32,21 +32,32 @@ public:
                 :ptr(ptr), count_iter(count_iter), key_iter(key_iter){}
     };
 
+    static Cache &make(){
+        static Cache cache;
+        return cache;
+    }
+
     // get and put
-    static Bytes get(const std::string &path, size_t block_num);
-    static void put(const std::string &path, size_t block_num, const Bytes &bytes);
+    Bytes get(const std::string &path, size_t block_num);
+    void put(const std::string &path, size_t block_num, const Bytes &bytes);
     // block io
-    static Bytes read_block(const std::string &path, size_t block_num);
-    static void write_block(const std::string &path, size_t block_num, const Bytes &bytes);
+    Bytes read_block(const std::string &path, size_t block_num);
+    void write_block(const std::string &path, size_t block_num, const Bytes &bytes);
 
 private:
-    static CountLst count_lst;
-    static std::unordered_map<CacheKey, CacheValue> data;
+    Cache(){}
+    Cache(const Cache &)= delete;
+    Cache(Cache &&)= delete;
+    Cache &operator=(const Cache &)= delete;
+    Cache &operator=(Cache &&)= delete;
+
+    CountLst count_lst;
+    std::unordered_map<CacheKey, CacheValue> data;
 
 private:
-    static CacheKey encode_key(const std::string &path, size_t block_num);
-    static KeyPair decode_key(const std::string &key);
-    static void write_back(const std::string &path, size_t block_num, const Bytes &bytes);
+    CacheKey encode_key(const std::string &path, size_t block_num);
+    KeyPair decode_key(const std::string &key);
+    void write_back(const std::string &path, size_t block_num, const Bytes &bytes);
 };
 
 #endif //MAIN_CACHE_H

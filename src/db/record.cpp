@@ -24,7 +24,7 @@ Record::TupleLst Record::read_record(const SDB::Type::PosList &pos_lst) {
     }
     TupleLst tuple_lst(property.tuple_property);
     for (auto &&item: block_offsets_map) {
-        SDB::Type::Bytes data_block = Cache::read_block(get_record_path(property), item.first);
+        SDB::Type::Bytes data_block = Cache::make().read_block(get_record_path(property), item.first);
         for (auto offset : item.second) {
             Tuple tuple = bytes_to_tuple(property, data_block.data(), offset);
             tuple_lst.tuple_lst.push_back(tuple);
@@ -41,7 +41,7 @@ Record::TupleLst Record::read_record(size_t block_num) {
         }
         throw std::runtime_error("Error: [read_record] block error");
     }
-    Bytes bytes = Cache::read_block(get_record_path(property), block_num);
+    Bytes bytes = Cache::make().read_block(get_record_path(property), block_num);
     size_t offset = 0;
     while (offset != BLOCK_SIZE) {
         if (offset > BLOCK_SIZE) {
@@ -84,7 +84,7 @@ void Record::write_record(size_t block_num, const TupleLst &tuple_lst) {
     if (offset != BLOCK_SIZE) {
         throw std::runtime_error("Error: [write_record] offset error");
     }
-    Cache::write_block(get_record_path(property), block_num, block_data);
+    Cache::make().write_block(get_record_path(property), block_num, block_data);
 }
 
 void Record::update(const std::string &pred_col_name, SDB::Type::BVFunc bvFunc,
@@ -112,7 +112,7 @@ SDB::Type::Pos Record::insert_record(const SDB::Type::Bytes &data) {
     size_t pos = get_free_pos(data.size());
     size_t block_num = pos / BLOCK_SIZE;
     size_t offset = pos % BLOCK_SIZE;
-    Cache cache;
+    Cache &cache = Cache::make();
     Bytes block_data = cache.read_block(get_record_path(property), block_num);
     std::memcpy(block_data.data()+offset, data.data(), data.size());
     cache.write_block(get_record_path(property), block_num, block_data);
@@ -124,7 +124,7 @@ void Record::remove_record(SDB::Type::Pos pos) {
         return;
     }
     size_t block_num = pos / BLOCK_SIZE;
-    Bytes bytes = Cache::read_block(get_record_path(property), block_num);
+    Bytes bytes = Cache::make().read_block(get_record_path(property), block_num);
     size_t start = pos % BLOCK_SIZE;
     size_t offset = pos % BLOCK_SIZE;
     bytes_to_tuple(property, bytes.data(), offset);

@@ -153,7 +153,7 @@ BpTree::nodePtrType BpTree::read(SDB::Type::Pos pos) const{
     if (free_end_pos == 0) {
         return nullptr;
     }
-    Bytes block_data = Cache::read_block(get_index_path(table_property), pos / BLOCK_SIZE);
+    Bytes block_data = Cache::make().read_block(get_index_path(table_property), pos / BLOCK_SIZE);
 
     // ptr
     nodePtrType ptr = std::make_shared<BptNode>();
@@ -222,7 +222,7 @@ void BpTree::write(nodePtrType ptr) {
     }
     ptr->file_pos = write_pos;
     size_t block_num = write_pos / BLOCK_SIZE;
-    Cache::write_block(get_index_path(table_property), block_num, block_data);
+    Cache::make().write_block(get_index_path(table_property), block_num, block_data);
 }
 
 void BpTree::create(const TableProperty &property) {
@@ -346,7 +346,7 @@ BpTree::PosList BpTree::find(const Value &key) const{
             }
         }
         if (is_for_end) {
-            throw_error("Error: can't fount key");
+            return PosList();
         }
     }
 }

@@ -203,7 +203,7 @@ void record_test(){
 }
 
 void cache_test() {
-    Cache cache;
+    Cache &cache = Cache::make();
     auto file = "test";
     for (size_t i = 0; i < 10; ++i) {
         auto str = std::to_string(i);
@@ -248,12 +248,25 @@ void db_test(){
     auto property_1 = get_table_property();
     auto property_2 = property_1;
     property_2.table_name = "test2";
-    TupleProperty::ColProperty tuple("col_3", Enum::INT, 4);
-    property_2.tuple_property.property_lst.push_back(tuple);
+    TupleProperty::ColProperty col_property("col_3", Enum::INT, 4);
+    property_2.tuple_property.property_lst.push_back(col_property);
     property_1.referenced_map["test2"] = "col_3";
     property_2.referencing_map["test"] = "col_3";
     db.create_table(property_1);
     db.create_table(property_2);
+    for (Int i = 0; i < 10; ++i) {
+        Type::Tuple tuple;
+        tuple.value_lst.push_back(Value::make(Enum::INT, Int(i)));
+        tuple.value_lst.push_back(Value::make(Enum::VARCHAR, std::to_string(i)));
+        db.insert("test", tuple);
+    }
+    db.find("test", "col_1", Function::get_bvfunc(Enum::LESS, Value::make(Enum::INT, Int(10)))).print();
+    Type::Tuple tuple;
+    tuple.value_lst.push_back(Value::make(Enum::INT, Int(1)));
+    tuple.value_lst.push_back(Value::make(Enum::VARCHAR, std::to_string(1)));
+    tuple.value_lst.push_back(Value::make(Enum::INT, Int(1)));
+    db.insert("test2", tuple);
+    db.remove("test", "col_1", Value::make(Enum::INT, Int(3)));
     db.drop_table(property_2.table_name);
     db.drop_table(property_1.table_name);
     db.drop_db();

@@ -6,6 +6,7 @@
 #include "io.h"
 #include "util.h"
 #include "table.h"
+#include "cache.h"
 
 using namespace SDB;
 
@@ -100,13 +101,11 @@ DB::TupleLst DB::find(const std::string &table_name,
 void DB::write_meta_data(const std::string &db_name, const TableNameSet &set) {
     Type::Bytes bytes;
     Function::bytes_append(bytes, set);
-    IO io(get_meta_path(db_name));
-    io.write_file(bytes);
+    Cache::make().write_file(get_meta_path(db_name), bytes);
 }
 
 void DB::read_meta_data() {
-    IO io(get_meta_path(db_name));
-    Type::Bytes bytes = io.read_file();
+    Type::Bytes bytes = Cache::make().read_file(get_meta_path(db_name));
     size_t offset = 0;
     Function::de_bytes(table_name_set, bytes, offset);
 }

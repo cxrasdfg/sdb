@@ -92,7 +92,7 @@ todo:
 - [X] LRU Cache
     - [X] get/put
     - [X] write/read block
-    - [  ] write/read file cache
+    - [X] write/read file cache
 
 - [X] db
     - [X] find

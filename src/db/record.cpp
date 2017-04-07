@@ -223,8 +223,7 @@ void Record::create(const TableProperty &property) {
     record_bytes.insert(record_bytes.end(), size_bytes.begin(), size_bytes.end());
     Bytes end_block_bytes = SDB::Function::en_bytes(size_t(0));
     record_bytes.insert(record_bytes.end(), end_block_bytes.begin(), end_block_bytes.end());
-    IO record_io(get_record_meta_path(property));
-    record_io.write_file(record_bytes);
+    Cache::make().write_file(get_record_meta_path(property), record_bytes);
 
     // record
     IO::create_file(get_record_path(property));
@@ -237,8 +236,7 @@ void Record::drop(const TableProperty &property) {
 
 // ========== private =========
 void Record::read_meta_data() {
-    IO io(get_record_meta_path(property));
-    SDB::Type::Bytes block_data = io.read_file();
+    SDB::Type::Bytes block_data = Cache::make().read_file(get_record_meta_path(property));
     size_t pos_count;
     std::memcpy(&pos_count, block_data.data(), SIZE_SIZE);
     auto beg = block_data.data()+SIZE_SIZE;
@@ -266,8 +264,7 @@ void Record::write_meta_data() {
     }
     Bytes block_num = SDB::Function::en_bytes(end_block_num);
     bytes.insert(bytes.end(), block_num.begin(), block_num.end());
-    IO io(get_record_meta_path(property));
-    io.write_file(bytes);
+    Cache::make().write_file(get_record_meta_path(property), bytes);
 }
 
 std::string Record::get_record_path(const TableProperty &property) {

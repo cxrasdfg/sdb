@@ -13,17 +13,6 @@ Cache::Bytes Cache::get(const std::string &path, size_t block_num) {
     if (it == data.end()) {
         return Bytes();
     }
-//    std::cout << "begin: ";
-//    for (auto &&x : count_lst) {
-//        std::cout << "count: " << x.first;
-//        std::cout << " set: ";
-//        for (auto &&y : x.second) {
-//            std::cout << y << " ";
-//        }
-//    }
-//    std::cout << std::endl;
-//    std::cout << data.size() << std::endl;
-//    std::cout << std::endl;
     auto count_iter = it->second.count_iter;
     auto key_iter = it->second.key_iter;
     auto lst_it_next = std::next(count_iter);
@@ -45,15 +34,6 @@ Cache::Bytes Cache::get(const std::string &path, size_t block_num) {
             count_lst.erase(count_iter);
         }
     }
-//    cout << "end: ";
-//    for (auto &&x : lst) {
-//        cout << "count: " << x.first;
-//        cout << " set: ";
-//        for (auto &&y : x.second) {
-//            cout << y << " ";
-//        }
-//    }
-//    cout << endl;
     return *it->second.ptr;
 }
 
@@ -120,8 +100,8 @@ Type::Bytes Cache::read_file(const std::string &path){
     return cache_bytes;
 }
 
-void Cache::write_file(const std::string &path, size_t block_num, const Bytes &bytes){
-    put(path, block_num, bytes);
+void Cache::write_file(const std::string &path, const Bytes &bytes){
+    put(path, 0, bytes);
 }
 
 // ========== private function ==========
@@ -138,7 +118,11 @@ Cache::KeyPair Cache::decode_key(const std::string &key) {
 
 void Cache::write_back(const std::string &path, size_t block_num, const Bytes &bytes) {
     IO io(path);
-    io.write_block(bytes, block_num);
+    if (bytes.size() == Const::BLOCK_SIZE) {
+        io.write_block(bytes, block_num);
+    } else {
+        io.write_file(bytes);
+    }
 }
 
 void Cache::sync() {

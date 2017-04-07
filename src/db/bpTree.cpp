@@ -54,8 +54,7 @@ void BpTree::write_info_block() {
         std::memcpy(beg+(j*Pos_len), &free_pos_list[j], Pos_len);
     }
     std::memcpy(beg+(free_pos_count*Pos_len), &free_end_pos, Pos_len);
-    IO io(get_index_meta_path(table_property));
-    io.write_file(data);
+    Cache::make().write_file(get_index_meta_path(table_property), data);
 }
 
 void BpTree::initialize() {
@@ -65,8 +64,7 @@ void BpTree::initialize() {
     size_t Pos_len = sizeof(size_t);
     node_key_count = (SDB::Const::BLOCK_SIZE-Pos_len-1-size_len)/(key_size+Pos_len);
     // read info block
-    IO io(get_index_meta_path(table_property));
-    Bytes block_data = io.read_file();
+    Bytes block_data = Cache::make().read_file(get_index_meta_path(table_property));
     // set root_pos
     std::memcpy(&root_pos, block_data.data(), Pos_len);
     // get free pos
@@ -235,8 +233,7 @@ void BpTree::create(const TableProperty &property) {
     std::memcpy(bytes.data(), &root_pos, Const::POS_SIZE);
     std::memcpy(bytes.data()+SIZE_SIZE, &free_pos_count, SIZE_SIZE);
     std::memcpy(bytes.data()+SIZE_SIZE+SIZE_SIZE, &free_end_pos, SIZE_SIZE);
-    IO io(get_index_meta_path(property));
-    io.write_file(bytes);
+    Cache::make().write_file(get_index_meta_path(property), bytes);
     // index
     IO::create_file(get_index_path(property));
 }

@@ -11,6 +11,7 @@
 #include "table.h"
 #include "util.h"
 #include "io.h"
+#include "cache.h"
 
 
 using std::ios;
@@ -178,8 +179,7 @@ SDB::Type::TupleProperty Table::get_tuple_property()const{
 void Table::read_meta_data(const std::string &db_name, const std::string &table_name) {
     property.db_name = db_name;
     property.table_name = table_name;
-    IO io(get_table_meta_path(property));
-    Bytes bytes = io.read_file();
+    Bytes bytes = Cache::make().read_file(get_table_meta_path(property));
     size_t offset = 0;
     Function::de_bytes(property.key, bytes, offset);
     size_t col_count;
@@ -235,8 +235,7 @@ void Table::write_meta_data(const SDB::Type::TableProperty &property) {
     Function::bytes_append(bytes, property.not_null_set);
 
     // write to meta file
-    IO io(get_table_meta_path(property));
-    io.write_file(bytes);
+    Cache::make().write_file(get_table_meta_path(property), bytes);
 }
 
 bool Table::is_has_index(const std::string &col_name) const {

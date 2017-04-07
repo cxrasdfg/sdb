@@ -106,6 +106,24 @@ void Cache::write_block(const std::string &path, size_t block_num, const Bytes &
     put(path, block_num, bytes);
 }
 
+Type::Bytes Cache::read_file(const std::string &path){
+    // read cache
+    Bytes cache_bytes = get(path, 0);
+    if (!cache_bytes.empty()) {
+        return cache_bytes;
+    }
+    // else read file
+    IO io(path);
+    cache_bytes = io.read_file();
+    // put data to cache
+    put(path, 0, cache_bytes);
+    return cache_bytes;
+}
+
+void Cache::write_file(const std::string &path, size_t block_num, const Bytes &bytes){
+    put(path, block_num, bytes);
+}
+
 // ========== private function ==========
 Cache::CacheKey Cache::encode_key(const std::string &path, size_t block_num) {
     return path+"+"+std::to_string(block_num);

@@ -43,6 +43,9 @@ public:
     // block io
     Bytes read_block(const std::string &path, size_t block_num);
     void write_block(const std::string &path, size_t block_num, const Bytes &bytes);
+    // file io
+    Bytes read_file(const std::string &path);
+    void write_file(const std::string &path, size_t block_num, const Bytes &bytes);
 
 private:
     Cache(){}
